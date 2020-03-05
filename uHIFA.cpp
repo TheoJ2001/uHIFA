@@ -47,10 +47,10 @@ void PISTON::retract(){
 
 void PISTON::push(){
     read();
-    if(status(RETRACTED)){
+    if(get(RETRACTED)){
         extend();
     }
-    if(status(EXTENDED)){
+    if(get(EXTENDED)){
         retract();
     }
 }
@@ -72,7 +72,7 @@ void PISTON::drop(){
     }
 }
 
-int16_t PISTON::status(uint8_t mode){
+int16_t PISTON::get(int8_t mode){
     read();
     if(mode == RETRACTED){
         return retracted;
@@ -88,6 +88,10 @@ int16_t PISTON::status(uint8_t mode){
         return holding;
     }
 } 
+
+int16_t PISTON::status(int8_t mode){
+   return get(mode);
+}
 
 
 SHUTTLE::SHUTTLE(uint8_t upper_pin, uint8_t lower_pin){
@@ -117,22 +121,22 @@ void SHUTTLE::addStop(uint8_t s_index, int8_t s_pin){
 
 void SHUTTLE::read(){
 	for(uint8_t i = 0; i<stops_amt; i++){
-		stop_status[i] = digitalRead(stops[i]);
-		if(stop_status[i] != 0){
+		stop_get[i] = digitalRead(stops[i]);
+		if(stop_get[i] != 0){
             last_stop = i;
         }
 	}
     current_stop = -1;
     for(uint8_t i = 0; i<stops_amt; i++){
-		stop_status[i] = digitalRead(stops[i]);
-		if(stop_status[i] != 0){
+		stop_get[i] = digitalRead(stops[i]);
+		if(stop_get[i] != 0){
             current_stop = last_stop;
         }
 	}
 }
 
 void SHUTTLE::forward(){
-    if(shuttle_arm.status(SAFE)){
+    if(shuttle_arm.get(SAFE)){
         digitalWrite(upper_pressure, 0);
         digitalWrite(lower_pressure, 1);
         moving = true;
@@ -143,7 +147,7 @@ void SHUTTLE::forward(){
 }
 
 void SHUTTLE::backward(){
-	if(shuttle_arm.status(SAFE)){
+	if(shuttle_arm.get(SAFE)){
         digitalWrite(upper_pressure, 1);
         digitalWrite(lower_pressure, 0);
         moving = true;
@@ -180,18 +184,18 @@ void SHUTTLE::beginDeliv(uint8_t mode){
         if(current_stop != -1){
             if(mode == EXTENDED){
                shuttle_arm.extend();
-                if(not shuttle_arm.status(SAFE)){
+                if(not shuttle_arm.get(SAFE)){
                     shuttle_arm.grab();
-                    if(shuttle_arm.status(HOLDING) and shuttle_arm.status(EXTENDED)){
+                    if(shuttle_arm.get(HOLDING) and shuttle_arm.get(EXTENDED)){
                         shuttle_arm.retract();
                         delivering = true;
                     } 
                 }else if(mode == RETRACTED){
                     shuttle_arm.retract();
-                    if(shuttle_arm.status(SAFE)){
+                    if(shuttle_arm.get(SAFE)){
                         shuttle_arm.grab();
                     }
-                    if(shuttle_arm.status(HOLDING)){
+                    if(shuttle_arm.get(HOLDING)){
                         delivering = true;
                     }  
                 }     
@@ -204,9 +208,9 @@ void SHUTTLE::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
             shuttle_arm.extend();
-            if(shuttle_arm.status(EXTENDED)){
+            if(shuttle_arm.get(EXTENDED)){
                 shuttle_arm.drop();
-                if(not shuttle_arm.status(HOLDING)){
+                if(not shuttle_arm.get(HOLDING)){
                     shuttle_arm.retract();
                     delivering = false;
                 } 
@@ -219,7 +223,7 @@ void SHUTTLE::endDeliv(uint8_t mode){
     }
 }
 
-int16_t SHUTTLE::status(uint8_t mode){
+int16_t SHUTTLE::get(int8_t mode){
     read();
     if(mode == POSITION){
         return last_stop;
@@ -232,24 +236,28 @@ int16_t SHUTTLE::status(uint8_t mode){
     }else if(mode == DELIVERING){
         return delivering;
     }else if(mode == SAFE){
-        return shuttle_arm.status(SAFE);
+        return shuttle_arm.get(SAFE);
     }
 }
 
+int16_t SHUTTLE::status(int8_t mode){
+   return get(mode);
+}
 
-CONVEYOR::CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t str, uint8_t end, uint8_t tachom){
+
+CONVEYOR::CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom){
     power_relay_pin = pwr;
     polar_relay_pin = plr;
-    start_sens_pin = str;
-    end_sens_pin = end;
+    min_sens_pin = min;
+    max_sens_pin = max;
     tachometer_pin = tachom;
 }
 
 void CONVEYOR::initiate(){
     pinMode(power_relay_pin, OUTPUT);
     pinMode(polar_relay_pin, OUTPUT);
-    pinMode(start_sens_pin, INPUT);
-    pinMode(end_sens_pin, INPUT);
+    pinMode(min_sens_pin, INPUT);
+    pinMode(max_sens_pin, INPUT);
     pinMode(tachometer_pin, INPUT_PULLUP);
 }
 
@@ -269,17 +277,19 @@ void CONVEYOR::stop(){
 
 void CONVEYOR::forward(){
     digitalWrite(polar_relay_pin, 0);
+    direction = BACKWARDS;
 }
 
 void CONVEYOR::backward(){
     digitalWrite(polar_relay_pin, 1);
+    direction = BACKWARDS;
 }
 
 void CONVEYOR::reset(){
     reseting = true;
     start();
     backward();
-    if(at_start){
+    if(at_min){
         stop();
         tachometer_val = 0;
         reseting = false;
@@ -290,9 +300,9 @@ void CONVEYOR::reset(){
 }
 
 void CONVEYOR::maintain(){
-    at_start = digitalRead(start_sens_pin);
-    at_end = digitalRead(end_sens_pin);
-    if(at_end){
+    at_min = digitalRead(min_sens_pin);
+    at_max = digitalRead(max_sens_pin);
+    if(at_max){
         req_reset = true;
     }
     
@@ -314,30 +324,58 @@ void CONVEYOR::maintain(){
     }
 }
 
-void CONVEYOR::move(uint16_t pos){
+void CONVEYOR::move(int16_t pos){
     start();
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
-    if(pos>tachometer_val_mapped){
-        forward();
-    }else if(pos<tachometer_val_mapped){
-        req_reset = true;
-    }else{
-        stop();
+    if(pos==MIN){
+        if(get(MIN)){
+            stop();
+        }else if(tachometer_val_mapped > 0){
+            backward();
+        }else{
+            backward();
+        }
+    }else if(pos==MAX){
+        if(get(MIN)){
+            stop();
+        }else{
+            forward();
+        }
+    }else if(pos>=0){
+        if(get(MAX) or get(MIN)){
+            stop();
+        }else if(pos>tachometer_val_mapped){
+            forward();
+        }else if(pos<tachometer_val_mapped){
+            req_reset = true;
+        }else{
+            stop();
+        }
     }
 }
 
-int16_t CONVEYOR::status(uint8_t mode){
+int16_t CONVEYOR::get(int8_t mode){
     if(mode == RESET_REQ){
         return req_reset;
     }else if(mode == RESETING){
         return reseting;
     }else if(mode == STOPPED){
         return stopped;
-    }else if(mode == START){
-        return at_start;
-    }else if(mode == END){
-        return at_end;
+    }else if(mode == MIN){
+        return at_min;
+    }else if(mode == MAX){
+        return at_max;
     }else if(mode == POSITION){
         return tachometer_val_mapped;
+    }else if(mode == DIRECTION){
+        return direction;
+    }else if(mode == FORWARDS){
+        return (direction == FORWARDS) ? 1:0;
+    }else if(mode == BACKWARDS){
+        return (direction == BACKWARDS) ? 1:0;
     }
+}
+
+int16_t CONVEYOR::status(int8_t mode){
+   return get(mode);
 }
