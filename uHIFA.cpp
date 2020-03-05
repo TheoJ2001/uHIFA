@@ -18,6 +18,15 @@ void PISTON::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t pist
     pinMode(piston_pressure, OUTPUT);	
 }
 
+void PISTON::addGrab(uint8_t hold_pin, uint8_t grab_pin){
+    if(pistonType != PUSH){
+        hold_sens = hold_pin;
+        grab_pressure = grab_pin; 
+		pinMode(hold_sens, INPUT);
+        pinMode(grab_pressure, OUTPUT);
+	}
+}
+
 void PISTON::read(){
 	extended = digitalRead(ext_sens);
 	retracted = digitalRead(rtd_sens);
@@ -36,13 +45,14 @@ void PISTON::retract(){
     read();
 }
 
-void PISTON::addGrab(uint8_t hold_pin, uint8_t grab_pin){
-    if(pistonType != PUSH){
-        hold_sens = hold_pin;
-        grab_pressure = grab_pin; 
-		pinMode(hold_sens, INPUT);
-        pinMode(grab_pressure, OUTPUT);
-	}
+void PISTON::push(){
+    read();
+    if(status(RETRACTED)){
+        extend();
+    }
+    if(status(EXTENDED)){
+        retract();
+    }
 }
 
 void PISTON::grab(){
@@ -173,7 +183,6 @@ void SHUTTLE::beginDeliv(uint8_t mode){
                 if(not shuttle_arm.status(SAFE)){
                     shuttle_arm.grab();
                     if(shuttle_arm.status(HOLDING) and shuttle_arm.status(EXTENDED)){
-                        delay(1000);
                         shuttle_arm.retract();
                         delivering = true;
                     } 
