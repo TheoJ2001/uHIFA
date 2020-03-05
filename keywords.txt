@@ -1,0 +1,51 @@
+#######################################
+# Syntax Coloring Map For uHIFA  	
+#######################################
+
+uHIFA	KEYWORD1
+
+#######################################
+# Datatypes (KEYWORD1)                
+#######################################
+
+PISTON	KEYWORD1
+SHUTTLE	KEYWORD1
+CONVEYOR	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)    
+#######################################
+
+initiate	KEYWORD2
+config	KEYWORD2
+status	KEYWORD2
+move	KEYWORD2
+reset		KEYWORD2
+extend	KEYWORD2
+retract	KEYWORD2
+grab	KEYWORD2
+drop	KEYWORD2
+addGrab	KEYWORD2
+addStop	KEYWORD2
+setMax	KEYWORD2
+beginDeliv	KEYWORD2
+endDeliv	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)                
+#######################################
+
+PUSH	LITERAL1
+CLAW	LITERAL1
+VACUUM	LITERAL1
+EXTENDED	LITERAL1
+RETRACTED	LITERAL1
+HOLDING	LITERAL1
+POSITION	LITERAL1
+MOVING	LITERAL1
+DELIVERING	LITERAL1
+RESET_REQ	LITERAL1
+RESETING	LITERAL1
+STOPPED	LITERAL1
+START	LITERAL1
+END	LITERAL1
