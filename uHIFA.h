@@ -10,6 +10,10 @@
 #define CLAW 1
 #define VACUUM 2
 
+#define FORWARDS -4
+#define BACKWARDS -3
+#define MIN -2
+#define MAX -1
 #define RETRACTED 0
 #define EXTENDED 1
 #define SAFE 2
@@ -20,8 +24,7 @@
 #define RESET_REQ 7
 #define RESETING 8
 #define STOPPED 9
-#define START 10
-#define END 11
+#define DIRECTION 10
 
 class PISTON{
   public:
@@ -35,7 +38,9 @@ class PISTON{
     void retract();
     void grab();
     void drop();
-    int16_t status(uint8_t mode);
+
+    int16_t get(int8_t mode);
+    int16_t status(int8_t mode);
   private:
     uint8_t pistonType;              // 0 for push    
                                   // 1 for claw
@@ -67,13 +72,14 @@ class SHUTTLE{
     void beginDeliv(uint8_t mode);
     void endDeliv(uint8_t mode);
     
-    int16_t status(uint8_t mode);
+    int16_t get(int8_t mode);
+    int16_t status(int8_t mode);
    private:
     PISTON shuttle_arm;
     
     uint8_t max_stops = 8;
     int8_t stops[8];		        //the pins of the stops, -1 undefined
-    bool stop_status[8];	        //if index is true then it's stopped at index
+    bool stop_get[8];	        //if index is true then it's stopped at index
     uint8_t stops_amt;				//how many times will the shuttle stop
     uint8_t upper_pressure;			//the actuator controling the upper pressure of the shuttle 
     uint8_t lower_pressure;			//the actuator controling the lower pressure of the shuttle  
@@ -91,28 +97,29 @@ class SHUTTLE{
 
 class CONVEYOR{
   public:
-    CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t str, uint8_t end, uint8_t tachom);
+    CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
     void initiate();
     void setMax(uint16_t maxim);
     void maintain();
     void reset();
-    void move(uint16_t pos);
-    int16_t status(uint8_t mode);
-    
+    void move(int16_t pos);
+
+    int16_t get(int8_t mode);
+    int16_t status(int8_t mode);
   private:
     uint8_t power_relay_pin;
     uint8_t polar_relay_pin;
     uint8_t tachometer_pin;
-    uint8_t start_sens_pin;
-    uint8_t end_sens_pin;
+    uint8_t min_sens_pin;
+    uint8_t max_sens_pin;
     
-    bool at_start;
-    bool at_end;
+    bool at_min;
+    bool at_max;
     
     bool req_reset = true;
     bool reseting;
-    
     bool stopped;
+    int8_t direction = FORWARDS;
     
     uint16_t tachometer_max;
     uint16_t tachometer_val;
