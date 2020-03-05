@@ -190,7 +190,8 @@ void SHUTTLE::beginDeliv(uint8_t mode){
                         shuttle_arm.retract();
                         delivering = true;
                     } 
-                }else if(mode == RETRACTED){
+                }     
+            }else if(mode == RETRACTED){
                     shuttle_arm.retract();
                     if(shuttle_arm.get(SAFE)){
                         shuttle_arm.grab();
@@ -198,7 +199,6 @@ void SHUTTLE::beginDeliv(uint8_t mode){
                     if(shuttle_arm.get(HOLDING)){
                         delivering = true;
                     }  
-                }     
             }
         }
     }
@@ -266,22 +266,18 @@ void CONVEYOR::setMax(uint16_t maxim){
 }
 
 void CONVEYOR::start(){
-    digitalWrite(power_relay_pin, 1);
-    stopped = false;
+    moving = true;
 }
 
 void CONVEYOR::stop(){
-    digitalWrite(power_relay_pin, 0);
-    stopped = true;
+    moving = false;
 }
 
 void CONVEYOR::forward(){
-    digitalWrite(polar_relay_pin, 0);
-    direction = BACKWARDS;
+    direction = FORWARDS;
 }
 
 void CONVEYOR::backward(){
-    digitalWrite(polar_relay_pin, 1);
     direction = BACKWARDS;
 }
 
@@ -302,12 +298,19 @@ void CONVEYOR::reset(){
 void CONVEYOR::maintain(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
+
+    if(at_min){
+        forward();
+        tachometer_val = 0;
+    }
+
     if(at_max){
-        req_reset = true;
+        backward();
+        tachometer_val = 0;
     }
     
     if(not req_reset){
-        if(not reseting and not stopped){
+        if(not reseting and moving){
             if(not tachometer_read){
                 if(digitalRead(tachometer_pin)){
                     tachometer_val +=1;
@@ -322,13 +325,50 @@ void CONVEYOR::maintain(){
     }else{
         reset();
     }
+
+    if(moving){
+        digitalWrite(power_relay_pin, 1);
+    }else{
+        digitalWrite(power_relay_pin, 0);
+    }
+    
+    if(direction==FORWARDS){
+        digitalWrite(polar_relay_pin, 0);
+    }else{
+        digitalWrite(polar_relay_pin, 1);
+    }
 }
 
 void CONVEYOR::move(int16_t pos){
     start();
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
+
+    if(pos != (MAX or MIN)){
+        if(direction==BACKWARDS){
+            target_pos = 100 - pos;
+        }else{
+            target_pos = pos;
+        }
+        
+        if(target_pos>tachometer_val_mapped){
+            forward();
+        }else if(target_pos<tachometer_val_mapped){
+            if(tachometer_val_mapped>50){
+                if(direction==FORWARDS){
+                    forward();
+                }else{
+                    backward();
+                }
+            }else{
+                reset();
+            }
+        }else{
+            stop();
+        }
+    }
+
     if(pos==MIN){
-        if(get(MIN)){
+        if(at_min){
             stop();
         }else if(tachometer_val_mapped > 0){
             backward();
@@ -336,20 +376,10 @@ void CONVEYOR::move(int16_t pos){
             backward();
         }
     }else if(pos==MAX){
-        if(get(MIN)){
+        if(at_min){
             stop();
         }else{
             forward();
-        }
-    }else if(pos>=0){
-        if(get(MAX) or get(MIN)){
-            stop();
-        }else if(pos>tachometer_val_mapped){
-            forward();
-        }else if(pos<tachometer_val_mapped){
-            req_reset = true;
-        }else{
-            stop();
         }
     }
 }
@@ -359,8 +389,8 @@ int16_t CONVEYOR::get(int8_t mode){
         return req_reset;
     }else if(mode == RESETING){
         return reseting;
-    }else if(mode == STOPPED){
-        return stopped;
+    }else if(mode == MOVING){
+        return moving;
     }else if(mode == MIN){
         return at_min;
     }else if(mode == MAX){
