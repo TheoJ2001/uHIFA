@@ -29,6 +29,8 @@ class PISTON{
     void initiate();
     void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t piston_pin);
     void addGrab(uint8_t hold_pin, uint8_t grab_pin);
+    void push();
+    
     void extend();
     void retract();
     void grab();
