@@ -10,8 +10,6 @@
 #define CLAW 1
 #define VACUUM 2
 
-#define FORWARDS -4
-#define BACKWARDS -3
 #define MIN -2
 #define MAX -1
 #define RETRACTED 0
@@ -23,8 +21,9 @@
 #define DELIVERING 6
 #define RESET_REQ 7
 #define RESETING 8
-#define STOPPED 9
-#define DIRECTION 10
+#define DIRECTION 9
+#define FORWARDS 10
+#define BACKWARDS 11
 
 class PISTON{
   public:
@@ -118,9 +117,11 @@ class CONVEYOR{
     
     bool req_reset = true;
     bool reseting;
-    bool stopped;
+    bool moving;
     int8_t direction = FORWARDS;
     
+    uint8_t target_pos;
+
     uint16_t tachometer_max;
     uint16_t tachometer_val;
     uint16_t tachometer_val_mapped;
