@@ -15,7 +15,6 @@ bool wait(uint64_t dur){
             return true;
         }
     }
-
 }
 
 PISTON::PISTON(){}
