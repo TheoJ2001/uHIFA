@@ -1,5 +1,23 @@
 #include "uHIFA.h"
 
+bool wait(uint64_t dur){
+    uint64_t wait_start;
+    uint64_t wait_time;
+    bool waiting;
+
+    wait_time = millis();
+    if(not waiting){
+        wait_start = millis();
+        waiting = true;
+    }
+    if(waiting){
+        if((wait_time-wait_start)==dur){
+            return true;
+        }
+    }
+
+}
+
 PISTON::PISTON(){}
 
 void PISTON::initiate(){
@@ -184,7 +202,7 @@ void SHUTTLE::beginDeliv(uint8_t mode){
         if(current_stop != -1){
             if(mode == EXTENDED){
                shuttle_arm.extend();
-                if(not shuttle_arm.get(SAFE)){
+                if(not shuttle_arm.get(SAFE) and wait(1000)){
                     shuttle_arm.grab();
                     if(shuttle_arm.get(HOLDING) and shuttle_arm.get(EXTENDED)){
                         shuttle_arm.retract();
@@ -193,7 +211,7 @@ void SHUTTLE::beginDeliv(uint8_t mode){
                 }     
             }else if(mode == RETRACTED){
                     shuttle_arm.retract();
-                    if(shuttle_arm.get(SAFE)){
+                    if(shuttle_arm.get(SAFE) and wait(1000)){
                         shuttle_arm.grab();
                     }
                     if(shuttle_arm.get(HOLDING)){
@@ -208,7 +226,7 @@ void SHUTTLE::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
             shuttle_arm.extend();
-            if(shuttle_arm.get(EXTENDED)){
+            if(shuttle_arm.get(EXTENDED) and wait(1000)){
                 shuttle_arm.drop();
                 if(not shuttle_arm.get(HOLDING)){
                     shuttle_arm.retract();
@@ -216,9 +234,11 @@ void SHUTTLE::endDeliv(uint8_t mode){
                 } 
             }  
         }else if(mode == RETRACTED){
-                shuttle_arm.retract();
+            shuttle_arm.retract();
+            if(shuttle_arm.get(RETRACTED) and wait(1000)){
                 shuttle_arm.drop();
                 delivering = false;
+            }
         }
     }
 }
@@ -349,7 +369,7 @@ void CONVEYOR::move(int16_t pos){
         }else{
             target_pos = pos;
         }
-        
+
         if(target_pos>tachometer_val_mapped){
             forward();
         }else if(target_pos<tachometer_val_mapped){

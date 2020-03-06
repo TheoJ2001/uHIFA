@@ -25,6 +25,9 @@
 #define FORWARDS 10
 #define BACKWARDS 11
 
+
+bool wait(uint64_t dur);
+
 class PISTON{
   public:
     PISTON();
