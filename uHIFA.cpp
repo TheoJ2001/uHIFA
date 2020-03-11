@@ -7,7 +7,7 @@ bool MachineModule::wait(uint64_t dur){
         waiting = true;
     }
     if(waiting){
-        if((wait_time-wait_start)==dur){
+        if((wait_time-wait_start)>=dur){
             waiting = false;
             return true;
         }
