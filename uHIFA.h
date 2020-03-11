@@ -6,9 +6,8 @@
 
 #define NOT_DEF -1
 
-#define PUSH 0
+#define VACUUM 0
 #define CLAW 1
-#define VACUUM 2
 
 #define MIN -2
 #define MAX -1
@@ -26,80 +25,102 @@
 #define BACKWARDS 11
 
 
-bool wait(uint64_t dur);
-
-class PISTON{
+class MachineModule{
   public:
-    PISTON();
-    void initiate();
-    void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t piston_pin);
-    void addGrab(uint8_t hold_pin, uint8_t grab_pin);
-    void push();
-    
-    void extend();
-    void retract();
-    void grab();
-    void drop();
-
-    int16_t get(int8_t mode);
+    MachineModule() = default;
+    bool wait(uint64_t dur);
+    virtual void initiate() = 0; 
+    virtual void maintain() = 0;
+    virtual int16_t get(int8_t mode) = 0;
     int16_t status(int8_t mode);
-  private:
-    uint8_t pistonType;              // 0 for push    
-                                  // 1 for claw
-    				              // 2 for vacuum
-                                    
-    uint8_t ext_sens;			//the sensor that checks if the arm is extended
-    uint8_t rtd_sens;			//the sensor that checks if the arm is retracted
-    uint8_t hold_sens;			//the sensor that checks if the arm is holding an item
-    bool extended;
-    bool retracted;
-    bool holding;
-    uint8_t grab_pressure; 		//the actuator controling the grabing pressure
-    uint8_t piston_pressure;		//the actuator controling the extension and retraction of the arm 
-    
-    void read();
+  protected:
+    virtual void read() = 0;
+    bool waiting = false;
+    uint64_t wait_start;
+    uint64_t wait_time;
 };
 
-class SHUTTLE{
+class Piston : public MachineModule{
   public:
-	  SHUTTLE(uint8_t upper_pin, uint8_t lower_pin); 
+    Piston() = default;
+    void config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin);
+    virtual void initiate();
+    virtual void maintain();
+    virtual int16_t get(int8_t mode);
+    
+    void push();
+    void extend();
+    void retract();
+  protected:                        
+    uint8_t ext_sens;			      //the sensor that checks if the arm is extended
+    uint8_t rtd_sens;			      //the sensor that checks if the arm is retracted
+    bool extended;
+    bool retracted;
+
+    uint8_t piston_pin;		//the actuator controling the extension and retraction of the arm 
+    uint8_t piston_pressure; 
+    virtual void read();
+};
+
+class Grabber : public Piston{
+  public:
+    Grabber() = default;
+    void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin, uint8_t hold_pin, uint8_t grab_pin);
     void initiate();
-	  void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin); 
-																				 //arm = pin of actuator extending and retracting arm
-																				 //upper = pin for actuator controling the upper preassure of the shuttle
-																				 //lower = pin for actuator controling the lower preassure of the shuttle
-    void addStop(uint8_t s_index, int8_t s_pin);		 	 //add stops
     void maintain();
+    int16_t get(int8_t mode);
+
+    void grab();
+    void drop();
+  protected:
+    void read();
+  private:
+    uint8_t grabType; 
+    uint8_t hold_sens; 
+    bool holding;
+    uint8_t grabber_pin;
+    uint8_t grabber_pressure; 
+  };
+
+class Shuttle : public MachineModule{
+  public:
+	  Shuttle(uint8_t upper, uint8_t lower); 
+    void initiate();
+    void maintain();
+    int16_t get(int8_t mode);;
+
+	  void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin); 
+    void addStop(uint8_t s_index, int8_t s_pin);		 	 //add stops
+    
     void move(uint8_t pos);
     void beginDeliv(uint8_t mode);
     void endDeliv(uint8_t mode);
-    
-    int16_t get(int8_t mode);
-    int16_t status(int8_t mode);
-   private:
-    PISTON shuttle_arm;
-    
+  protected:
+    void read();
+  private:
+    Grabber shuttle_arm();
     uint8_t max_stops = 8;
     int8_t stops[8];		        //the pins of the stops, -1 undefined
-    bool stop_get[8];	        //if index is true then it's stopped at index
-    uint8_t stops_amt;				//how many times will the shuttle stop
-    uint8_t upper_pressure;			//the actuator controling the upper pressure of the shuttle 
-    uint8_t lower_pressure;			//the actuator controling the lower pressure of the shuttle  
+    bool stop_get[8];	          //if index is true then it's stopped at index
+    uint8_t stops_amt;				  //how many times will the Shuttle stop
+    uint8_t upper_pin;
+    uint8_t lower_pin;
+    uint8_t upper_pressure = HIGH;
+    uint8_t lower_pressure = HIGH;
     
     int8_t last_stop = -1;
     int8_t current_stop;
     bool delivering = false; 
     bool moving = false;
-        
-    void read();
+    
     void stop();
     void forward();
     void backward();
 };
 
-class CONVEYOR{
+class Conveyor : public MachineModule{
   public:
-    CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
+    Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
     void initiate();
     void setMax(uint16_t maxim);
     void maintain();
