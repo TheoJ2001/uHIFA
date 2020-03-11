@@ -153,7 +153,7 @@ void Shuttle::initiate(){
 }
 
 void Shuttle::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin){
-    this->shuttle_arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
+    this->arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
 }
 
 void Shuttle::maintain(){
@@ -190,7 +190,7 @@ void Shuttle::read(){
 }
 
 void Shuttle::forward(){
-    if(this->shuttle_arm.get(SAFE)){
+    if(this->arm.get(SAFE)){
         upper_pressure  =  LOW;
         lower_pressure = HIGH;
     }else{
@@ -199,7 +199,7 @@ void Shuttle::forward(){
 }
 
 void Shuttle::backward(){
-	if(this->shuttle_arm.get(SAFE)){
+	if(this->arm.get(SAFE)){
         upper_pressure  =  HIGH;
         lower_pressure = LOW;
     }else{
@@ -227,20 +227,20 @@ void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
         if(current_stop != -1){
             if(mode == EXTENDED){
-               this->shuttle_arm.extend();
-                if(not this->shuttle_arm.get(SAFE) and wait(1000)){
-                    this->shuttle_arm.grab();
-                    if(this->shuttle_arm.get(HOLDING) and this->shuttle_arm.get(EXTENDED)){
-                        this->shuttle_arm.retract();
+               this->arm.extend();
+                if(not this->arm.get(SAFE) and wait(1000)){
+                    this->arm.grab();
+                    if(this->arm.get(HOLDING) and this->arm.get(EXTENDED)){
+                        this->arm.retract();
                         delivering = true;
                     } 
                 }     
             }else if(mode == RETRACTED){
-                    this->shuttle_arm.retract();
-                    if(this->shuttle_arm.get(SAFE) and wait(1000)){
-                        this->shuttle_arm.grab();
+                    this->arm.retract();
+                    if(this->arm.get(SAFE) and wait(1000)){
+                        this->arm.grab();
                     }
-                    if(this->shuttle_arm.get(HOLDING)){
+                    if(this->arm.get(HOLDING)){
                         delivering = true;
                     }  
             }
@@ -251,18 +251,18 @@ void Shuttle::beginDeliv(uint8_t mode){
 void Shuttle::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
-            this->shuttle_arm.extend();
-            if(this->shuttle_arm.get(EXTENDED) and wait(1000)){
-                this->shuttle_arm.drop();
-                if(not this->shuttle_arm.get(HOLDING)){
-                    this->shuttle_arm.retract();
+            this->arm.extend();
+            if(this->arm.get(EXTENDED) and wait(1000)){
+                this->arm.drop();
+                if(not this->arm.get(HOLDING)){
+                    this->arm.retract();
                     delivering = false;
                 } 
             }  
         }else if(mode == RETRACTED){
-            this->shuttle_arm.retract();
-            if(this->shuttle_arm.get(RETRACTED) and wait(1000)){
-                this->shuttle_arm.drop();
+            this->arm.retract();
+            if(this->arm.get(RETRACTED) and wait(1000)){
+                this->arm.drop();
                 delivering = false;
             }
         }
@@ -282,7 +282,7 @@ int16_t Shuttle::get(int8_t mode){
     }else if(mode == DELIVERING){
         return delivering;
     }else if(mode == SAFE){
-        return this->shuttle_arm.get(SAFE);
+        return this->arm.get(SAFE);
     }
 }
 

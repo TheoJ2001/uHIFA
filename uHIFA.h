@@ -98,7 +98,7 @@ class Shuttle : public MachineModule{
   protected:
     void read();
   private:
-    Grabber shuttle_arm();
+    Grabber arm();
     uint8_t max_stops = 8;
     int8_t stops[8];		        //the pins of the stops, -1 undefined
     bool stop_get[8];	          //if index is true then it's stopped at index
