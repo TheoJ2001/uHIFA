@@ -34,7 +34,6 @@ class MachineModule{
     virtual int16_t get(int8_t mode) = 0;
     int16_t status(int8_t mode);
   protected:
-    virtual void read() = 0;
     bool waiting = false;
     uint64_t wait_start;
     uint64_t wait_time;
