@@ -25,9 +25,9 @@
 #define BACKWARDS 11
 
 
-class MachineModule{
+class Machine{
   public:
-    MachineModule() = default;
+    Machine() = default;
     bool wait(uint64_t dur);
     virtual void initiate() = 0; 
     virtual void maintain() = 0;
@@ -39,7 +39,7 @@ class MachineModule{
     uint64_t wait_time;
 };
 
-class Piston : public MachineModule{
+class Piston{
   public:
     Piston() = default;
     void config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin);
@@ -81,7 +81,8 @@ class Grabber : public Piston{
     uint8_t grabber_pressure; 
   };
 
-class Shuttle : public MachineModule{
+
+class Shuttle : public Machine{
   public:
 	  Shuttle(uint8_t upper, uint8_t lower); 
     void initiate();
@@ -97,7 +98,7 @@ class Shuttle : public MachineModule{
   protected:
     void read();
   private:
-    Grabber arm();
+    Grabber arm;
     uint8_t max_stops = 8;
     int8_t stops[8];		        //the pins of the stops, -1 undefined
     bool stop_get[8];	          //if index is true then it's stopped at index
@@ -117,7 +118,7 @@ class Shuttle : public MachineModule{
     void backward();
 };
 
-class Conveyor : public MachineModule{
+class Conveyor : public Machine{
   public:
     Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
     void initiate();

@@ -1,6 +1,6 @@
 #include "uHIFA.h"
 
-bool MachineModule::wait(uint64_t dur){
+bool Machine::wait(uint64_t dur){
     wait_time = millis();
     if(not waiting){
         wait_start = millis();
@@ -14,7 +14,7 @@ bool MachineModule::wait(uint64_t dur){
     }
 }
 
-int16_t MachineModule::status(int8_t mode){
+int16_t Machine::status(int8_t mode){
    return get(mode);
 }
 
@@ -106,11 +106,12 @@ void Grabber::maintain(){
 void Grabber::grab(){
     if(grabType == VACUUM){
         grabber_pressure = HIGH;
-    }else{
-        if(holding){
+    }
+    if(grabType == CLAW){
+        if(holding==HIGH){
             grabber_pressure = HIGH;
-        }
-    } 
+        }  
+    }
 }
 
 void Grabber::drop(){
@@ -153,10 +154,11 @@ void Shuttle::initiate(){
 }
 
 void Shuttle::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin){
-    this->arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
+    arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
 }
 
 void Shuttle::maintain(){
+    arm.maintain();
     read();
     if((upper_pressure*lower_pressure) != HIGH){
         moving = true;
@@ -190,7 +192,7 @@ void Shuttle::read(){
 }
 
 void Shuttle::forward(){
-    if(this->arm.get(SAFE)){
+    if(arm.get(SAFE)){
         upper_pressure  =  LOW;
         lower_pressure = HIGH;
     }else{
@@ -199,7 +201,7 @@ void Shuttle::forward(){
 }
 
 void Shuttle::backward(){
-	if(this->arm.get(SAFE)){
+	if(arm.get(SAFE)){
         upper_pressure  =  HIGH;
         lower_pressure = LOW;
     }else{
@@ -227,20 +229,20 @@ void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
         if(current_stop != -1){
             if(mode == EXTENDED){
-               this->arm.extend();
-                if(not this->arm.get(SAFE) and wait(1000)){
-                    this->arm.grab();
-                    if(this->arm.get(HOLDING) and this->arm.get(EXTENDED)){
-                        this->arm.retract();
+               arm.extend();
+                if(not arm.get(SAFE) and wait(1000)){
+                    arm.grab();
+                    if(arm.get(HOLDING) and arm.get(EXTENDED)){
+                        arm.retract();
                         delivering = true;
                     } 
                 }     
             }else if(mode == RETRACTED){
-                    this->arm.retract();
-                    if(this->arm.get(SAFE) and wait(1000)){
-                        this->arm.grab();
+                    arm.retract();
+                    if(arm.get(SAFE) and wait(1000)){
+                        arm.grab();
                     }
-                    if(this->arm.get(HOLDING)){
+                    if(arm.get(HOLDING)){
                         delivering = true;
                     }  
             }
@@ -251,18 +253,18 @@ void Shuttle::beginDeliv(uint8_t mode){
 void Shuttle::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
-            this->arm.extend();
-            if(this->arm.get(EXTENDED) and wait(1000)){
-                this->arm.drop();
-                if(not this->arm.get(HOLDING)){
-                    this->arm.retract();
+            arm.extend();
+            if(arm.get(EXTENDED) and wait(1000)){
+                arm.drop();
+                if(not arm.get(HOLDING)){
+                    arm.retract();
                     delivering = false;
                 } 
             }  
         }else if(mode == RETRACTED){
-            this->arm.retract();
-            if(this->arm.get(RETRACTED) and wait(1000)){
-                this->arm.drop();
+            arm.retract();
+            if(arm.get(RETRACTED) and wait(1000)){
+                arm.drop();
                 delivering = false;
             }
         }
@@ -282,7 +284,7 @@ int16_t Shuttle::get(int8_t mode){
     }else if(mode == DELIVERING){
         return delivering;
     }else if(mode == SAFE){
-        return this->arm.get(SAFE);
+        return arm.get(SAFE);
     }
 }
 
@@ -342,13 +344,19 @@ void Conveyor::maintain(){
     at_max = digitalRead(max_sens_pin);
 
     if(at_min){
-        forward();
-        tachometer_val = 0;
+        stop(); 
+        if(wait(1000)){
+            forward();
+            tachometer_val = 0;
+        }
     }
 
     if(at_max){
-        backward();
-        tachometer_val = 0;
+        stop(); 
+        if(wait(1000)){
+            backward();
+            tachometer_val = 0;
+        }
     }
     
     if(not req_reset){
