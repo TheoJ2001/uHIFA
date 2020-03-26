@@ -25,9 +25,6 @@
 #define FORWARDS 0xA
 #define BACKWARDS 0xB
 
-namespace hifa{
-  uint64_t sensitivity = 1000;
-}
 
 class Piston{
   public:
@@ -144,7 +141,6 @@ class Conveyor : public Machine{
     void move(int16_t pos);
 
     int16_t get(int8_t mode);
-    int16_t status(int8_t mode);
   private:
     uint8_t power_relay_pin;
     uint8_t polar_relay_pin;
@@ -157,6 +153,7 @@ class Conveyor : public Machine{
     
     bool req_reset = true;
     bool reseting;
+    bool overshot;
     bool moving;
     int8_t direction = FORWARDS;
     
