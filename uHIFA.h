@@ -4,35 +4,41 @@
 #include <stdint.h> 
 #include <Arduino.h>
 
-#define NOT_DEF -1
+#define UNDEFINED -1
 
 #define VACUUM 0
 #define CLAW 1
 
-#define MIN -2
-#define MAX -1
-#define RETRACTED 0
-#define EXTENDED 1
-#define SAFE 2
-#define HOLDING 3
-#define POSITION 4
-#define MOVING 5
-#define DELIVERING 6
-#define RESET_REQ 7
-#define RESETING 8
-#define DIRECTION 9
-#define FORWARDS 10
-#define BACKWARDS 11
+#define MIN -1
+#define MAX -2
 
+#define RETRACTED 0x0
+#define EXTENDED 0x1
+#define SAFE 0x2
+#define HOLDING 0x3
+#define POSITION 0x4
+#define MOVING 0x5
+#define DELIVERING 0x6
+#define RESET_REQ 0x7
+#define RESETING 0x8
+#define DIRECTION 0x9
+#define FORWARDS 0xA
+#define BACKWARDS 0xB
+
+namespace hifa{
+  uint64_t sensitivity = 1000;
+}
 
 class Machine{
   public:
     Machine() = default;
     bool wait(uint64_t dur);
-    virtual void initiate() = 0; 
-    virtual void maintain() = 0;
+    virtual void init() = 0; 
+    virtual void scan() = 0;
+    virtual void update() = 0;
     virtual int16_t get(int8_t mode) = 0;
     int16_t status(int8_t mode);
+    virtual ~Machine() = default;
   protected:
     bool waiting = false;
     uint64_t wait_start;
@@ -42,15 +48,21 @@ class Machine{
 class Piston{
   public:
     Piston() = default;
+    bool wait(uint64_t dur);
     void config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin);
-    virtual void initiate();
-    virtual void maintain();
+    virtual void init();
+    void scan();
+    virtual void update();
     virtual int16_t get(int8_t mode);
     
     void push();
     void extend();
     void retract();
-  protected:                        
+  protected:  
+    bool waiting = false;
+    uint64_t wait_start;
+    uint64_t wait_time;
+
     uint8_t ext_sens;			      //the sensor that checks if the arm is extended
     uint8_t rtd_sens;			      //the sensor that checks if the arm is retracted
     bool extended;
@@ -65,8 +77,9 @@ class Grabber : public Piston{
   public:
     Grabber() = default;
     void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin, uint8_t hold_pin, uint8_t grab_pin);
-    void initiate();
-    void maintain();
+    void init();
+    void scan();
+    void update();
     int16_t get(int8_t mode);
 
     void grab();
@@ -85,8 +98,9 @@ class Grabber : public Piston{
 class Shuttle : public Machine{
   public:
 	  Shuttle(uint8_t upper, uint8_t lower); 
-    void initiate();
-    void maintain();
+    void init();
+    void scan();
+    void update();
     int16_t get(int8_t mode);;
 
 	  void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin); 
@@ -121,9 +135,10 @@ class Shuttle : public Machine{
 class Conveyor : public Machine{
   public:
     Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
-    void initiate();
+    void init();
     void setMax(uint16_t maxim);
-    void maintain();
+    void scan();
+    void update();
     void reset();
     void move(int16_t pos);
 
