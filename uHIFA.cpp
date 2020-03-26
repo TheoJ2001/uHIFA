@@ -57,7 +57,6 @@ void Piston::push(){
 }
 
 int16_t Piston::get(int8_t mode){
-    read();
     if(mode == RETRACTED){
         return retracted;
     }else if(mode == EXTENDED){
@@ -95,8 +94,11 @@ void Grabber::read(){
     holding = digitalRead(hold_sens);
 }
 
-void Grabber::update(){
+void Grabber::scan(){
     read();
+}
+
+void Grabber::update(){
     digitalWrite(piston_pin, piston_pressure);
     digitalWrite(grabber_pin, grabber_pressure);
 }
@@ -250,19 +252,21 @@ void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
         if(current_stop != UNDEFINED){
             if(mode == EXTENDED){
-               arm.extend();
-                if(not arm.get(SAFE) and wait(hifa::sensitivity)){
+                if(not arm.get(EXTENDED)){
+                    arm.extend();
+                }
+                if(not arm.get(SAFE) and wait(1000)){
                     arm.grab();
-                    if(arm.get(HOLDING) and arm.get(EXTENDED)){
-                        if(wait(hifa::sensitivity)){
-                            arm.retract();
-                            delivering = true;
-                        }
-                    } 
-                }     
+                }
+                if(arm.get(HOLDING) and arm.get(EXTENDED)){
+                    if(wait(1000)){
+                        arm.retract();
+                        delivering = true;
+                    }
+                }      
             }else if(mode == RETRACTED){
                     arm.retract();
-                    if(arm.get(SAFE) and wait(hifa::sensitivity)){
+                    if(arm.get(SAFE) and wait(1000)){
                         arm.grab();
                     }
                     if(arm.get(HOLDING)){
@@ -277,7 +281,7 @@ void Shuttle::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
             arm.extend();
-            if(arm.get(EXTENDED) and wait(hifa::sensitivity)){
+            if(arm.get(EXTENDED) and wait(1000)){
                 arm.drop();
                 if(not arm.get(HOLDING)){
                     arm.retract();
@@ -286,7 +290,7 @@ void Shuttle::endDeliv(uint8_t mode){
             }  
         }else if(mode == RETRACTED){
             arm.retract();
-            if(arm.get(RETRACTED) and wait(hifa::sensitivity)){
+            if(arm.get(RETRACTED) and wait(1000)){
                 arm.drop();
                 delivering = false;
             }
@@ -295,7 +299,6 @@ void Shuttle::endDeliv(uint8_t mode){
 }
 
 int16_t Shuttle::get(int8_t mode){
-    read();
     if(mode == POSITION){
         return last_stop;
     }else if(mode == MOVING){
@@ -383,7 +386,7 @@ void Conveyor::scan(){
     }
     
     if(not req_reset){
-        if(not reseting and moving){
+        if(not (reseting or overshot) and moving){
             if(not tachometer_read){
                 if(digitalRead(tachometer_pin)){
                     tachometer_val +=1;
@@ -417,28 +420,40 @@ void Conveyor::update(){
 void Conveyor::move(int16_t pos){
     start();
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
-
     if(pos != (MAX or MIN)){
-        if(direction==BACKWARDS){
-            target_pos = 100 - pos;
-        }else{
-            target_pos = pos;
-        }
-        if(target_pos>tachometer_val_mapped){
-            forward();
-        }else if(target_pos<tachometer_val_mapped){
-            if(tachometer_val_mapped>50){
-                if(direction==FORWARDS){
-                    forward();
+        if(not overshot){
+            if(direction==BACKWARDS){
+                target_pos = 100 - pos;
+            }else{
+                target_pos = pos;
+            }
+            if(target_pos>tachometer_val_mapped){
+                forward();
+            }else if(target_pos<tachometer_val_mapped){
+                if(tachometer_val_mapped>50){
+                    overshot = true;
                 }else{
-                    backward();
+                    reset();
                 }
             }else{
-                reset();
+                stop();
             }
         }else{
-            stop();
+            if(direction==FORWARDS){
+                forward();
+                if(at_max){
+                    overshot = false;
+                    tachometer_val = 0;
+                }
+            }else{
+                backward();
+                if(at_min){
+                    overshot = false;
+                    tachometer_val = 0;
+                }
+            }
         }
+        
     }
 
     if(pos==MIN){
