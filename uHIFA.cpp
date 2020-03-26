@@ -377,7 +377,7 @@ void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
 
-    if(at_min){
+    if(at_min and not reseting){
         stop(); 
         if(wait(1000)){
             default_direction = true;
@@ -385,7 +385,7 @@ void Conveyor::scan(){
         }
     }
 
-    if(at_max){
+    if(at_max and not reseting){
         stop(); 
         if(wait(1000)){
             default_direction = false;
