@@ -1,24 +1,5 @@
 #include "uHIFA.h"
 
-bool Machine::wait(uint64_t dur){
-    wait_time = millis();
-    if(not waiting){
-        wait_start = millis();
-        waiting = true;
-    }
-    if(waiting){
-        if((wait_time-wait_start)>=dur){
-            waiting = false;
-            return true;
-        }
-    }
-}
-
-int16_t Machine::status(int8_t mode){
-   return get(mode);
-}
-
-
 bool Piston::wait(uint64_t dur){
     wait_time = millis();
     if(not waiting){
@@ -156,7 +137,23 @@ int16_t Grabber::get(int8_t mode){
     }
 } 
 
+bool Machine::wait(uint64_t dur){
+    wait_time = millis();
+    if(not waiting){
+        wait_start = millis();
+        waiting = true;
+    }
+    if(waiting){
+        if((wait_time-wait_start)>=dur){
+            waiting = false;
+            return true;
+        }
+    }
+}
 
+int16_t Machine::status(int8_t mode){
+   return get(mode);
+}
 
 Shuttle::Shuttle(uint8_t upper, uint8_t lower){
 	upper_pin = upper;	

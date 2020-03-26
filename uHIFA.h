@@ -29,22 +29,6 @@ namespace hifa{
   uint64_t sensitivity = 1000;
 }
 
-class Machine{
-  public:
-    Machine() = default;
-    bool wait(uint64_t dur);
-    virtual void init() = 0; 
-    virtual void scan() = 0;
-    virtual void update() = 0;
-    virtual int16_t get(int8_t mode) = 0;
-    int16_t status(int8_t mode);
-    virtual ~Machine() = default;
-  protected:
-    bool waiting = false;
-    uint64_t wait_start;
-    uint64_t wait_time;
-};
-
 class Piston{
   public:
     Piston() = default;
@@ -58,6 +42,8 @@ class Piston{
     void push();
     void extend();
     void retract();
+
+    virtual ~Piston() = default;
   protected:  
     bool waiting = false;
     uint64_t wait_start;
@@ -94,6 +80,21 @@ class Grabber : public Piston{
     uint8_t grabber_pressure; 
   };
 
+  class Machine{
+  public:
+    Machine() = default;
+    bool wait(uint64_t dur);
+    virtual void init() = 0; 
+    virtual void scan() = 0;
+    virtual void update() = 0;
+    virtual int16_t get(int8_t mode) = 0;
+    int16_t status(int8_t mode);
+    virtual ~Machine() = default;
+  protected:
+    bool waiting = false;
+    uint64_t wait_start;
+    uint64_t wait_time;
+};
 
 class Shuttle : public Machine{
   public:
