@@ -4,116 +4,164 @@
 #include <stdint.h> 
 #include <Arduino.h>
 
-#define NOT_DEF -1
+#define UNDEFINED -1
 
-#define PUSH 0
+#define VACUUM 0
 #define CLAW 1
-#define VACUUM 2
 
-#define RETRACTED 0
-#define EXTENDED 1
-#define SAFE 2
-#define HOLDING 3
-#define POSITION 4
-#define MOVING 5
-#define DELIVERING 6
-#define RESET_REQ 7
-#define RESETING 8
-#define STOPPED 9
-#define START 10
-#define END 11
+#define MIN -1
+#define MAX -2
 
-class PISTON{
+#define RETRACTED 0x0
+#define EXTENDED 0x1
+#define SAFE 0x2
+#define HOLDING 0x3
+#define POSITION 0x4
+#define MOVING 0x5
+#define DELIVERING 0x6
+#define RESET_REQ 0x7
+#define RESETING 0x8
+#define DIRECTION 0x9
+#define FORWARDS 0xA
+#define BACKWARDS 0xB
+
+namespace hifa{
+  uint64_t sensitivity = 1000;
+}
+
+class Piston{
   public:
-    PISTON();
-    void initiate();
-    void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t piston_pin);
-    void addGrab(uint8_t hold_pin, uint8_t grab_pin);
-    void push();
+    Piston() = default;
+    bool wait(uint64_t dur);
+    void config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin);
+    virtual void init();
+    void scan();
+    virtual void update();
+    virtual int16_t get(int8_t mode);
     
+    void push();
     void extend();
     void retract();
-    void grab();
-    void drop();
-    int16_t status(uint8_t mode);
-  private:
-    uint8_t pistonType;              // 0 for push    
-                                  // 1 for claw
-    				              // 2 for vacuum
-                                    
-    uint8_t ext_sens;			//the sensor that checks if the arm is extended
-    uint8_t rtd_sens;			//the sensor that checks if the arm is retracted
-    uint8_t hold_sens;			//the sensor that checks if the arm is holding an item
+
+    virtual ~Piston() = default;
+  protected:  
+    bool waiting = false;
+    uint64_t wait_start;
+    uint64_t wait_time;
+
+    uint8_t ext_sens;			      //the sensor that checks if the arm is extended
+    uint8_t rtd_sens;			      //the sensor that checks if the arm is retracted
     bool extended;
     bool retracted;
-    bool holding;
-    uint8_t grab_pressure; 		//the actuator controling the grabing pressure
-    uint8_t piston_pressure;		//the actuator controling the extension and retraction of the arm 
-    
-    void read();
+
+    uint8_t piston_pin;		//the actuator controling the extension and retraction of the arm 
+    uint8_t piston_pressure; 
+    virtual void read();
 };
 
-class SHUTTLE{
+class Grabber : public Piston{
   public:
-	  SHUTTLE(uint8_t upper_pin, uint8_t lower_pin); 
-    void initiate();
+    Grabber() = default;
+    void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin, uint8_t hold_pin, uint8_t grab_pin);
+    void init();
+    void scan();
+    void update();
+    int16_t get(int8_t mode);
+
+    void grab();
+    void drop();
+  protected:
+    void read();
+  private:
+    uint8_t grabType; 
+    uint8_t hold_sens; 
+    bool holding;
+    uint8_t grabber_pin;
+    uint8_t grabber_pressure; 
+  };
+
+  class Machine{
+  public:
+    Machine() = default;
+    bool wait(uint64_t dur);
+    virtual void init() = 0; 
+    virtual void scan() = 0;
+    virtual void update() = 0;
+    virtual int16_t get(int8_t mode) = 0;
+    int16_t status(int8_t mode);
+    virtual ~Machine() = default;
+  protected:
+    bool waiting = false;
+    uint64_t wait_start;
+    uint64_t wait_time;
+};
+
+class Shuttle : public Machine{
+  public:
+	  Shuttle(uint8_t upper, uint8_t lower); 
+    void init();
+    void scan();
+    void update();
+    int16_t get(int8_t mode);;
+
 	  void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin); 
-																				 //arm = pin of actuator extending and retracting arm
-																				 //upper = pin for actuator controling the upper preassure of the shuttle
-																				 //lower = pin for actuator controling the lower preassure of the shuttle
     void addStop(uint8_t s_index, int8_t s_pin);		 	 //add stops
-    void maintain();
+    
     void move(uint8_t pos);
     void beginDeliv(uint8_t mode);
     void endDeliv(uint8_t mode);
-    
-    int16_t status(uint8_t mode);
-   private:
-    PISTON shuttle_arm;
-    
+  protected:
+    void read();
+  private:
+    Grabber arm;
     uint8_t max_stops = 8;
     int8_t stops[8];		        //the pins of the stops, -1 undefined
-    bool stop_status[8];	        //if index is true then it's stopped at index
-    uint8_t stops_amt;				//how many times will the shuttle stop
-    uint8_t upper_pressure;			//the actuator controling the upper pressure of the shuttle 
-    uint8_t lower_pressure;			//the actuator controling the lower pressure of the shuttle  
+    bool stop_get[8];	          //if index is true then it's stopped at index
+    uint8_t stops_amt;				  //how many times will the Shuttle stop
+    uint8_t upper_pin;
+    uint8_t lower_pin;
+    uint8_t upper_pressure = HIGH;
+    uint8_t lower_pressure = HIGH;
     
     int8_t last_stop = -1;
     int8_t current_stop;
     bool delivering = false; 
     bool moving = false;
-        
-    void read();
+    
     void stop();
     void forward();
     void backward();
 };
 
-class CONVEYOR{
+class Conveyor : public Machine{
   public:
-    CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t str, uint8_t end, uint8_t tachom);
-    void initiate();
+    Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
+    void init();
     void setMax(uint16_t maxim);
-    void maintain();
+    void scan();
+    void update();
     void reset();
-    void move(uint16_t pos);
-    int16_t status(uint8_t mode);
-    
+    void move(int16_t pos);
+
+    int16_t get(int8_t mode);
+    int16_t status(int8_t mode);
   private:
     uint8_t power_relay_pin;
     uint8_t polar_relay_pin;
     uint8_t tachometer_pin;
-    uint8_t start_sens_pin;
-    uint8_t end_sens_pin;
+    uint8_t min_sens_pin;
+    uint8_t max_sens_pin;
     
-    bool at_start;
-    bool at_end;
+    bool at_min;
+    bool at_max;
     
     bool req_reset = true;
     bool reseting;
+    bool moving;
+    int8_t direction = FORWARDS;
     
-    bool stopped;
-    
+    uint8_t target_pos;
+
     uint16_t tachometer_max;
     uint16_t tachometer_val;
     uint16_t tachometer_val_mapped;

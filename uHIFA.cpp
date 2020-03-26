@@ -1,78 +1,126 @@
 #include "uHIFA.h"
 
-PISTON::PISTON(){}
+bool Piston::wait(uint64_t dur){
+    wait_time = millis();
+    if(not waiting){
+        wait_start = millis();
+        waiting = true;
+    }
+    if(waiting){
+        if((wait_time-wait_start)>=dur){
+            waiting = false;
+            return true;
+        }
+    }
+}
 
-void PISTON::initiate(){
-    pinMode(piston_pressure, OUTPUT);		
+void Piston::config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin){
+    rtd_sens = rtd_pin;	
+    ext_sens = ext_pin;				
+    piston_pin = push_pin;
+}
+
+void Piston::init(){
+    pinMode(piston_pin, OUTPUT);		
     pinMode(ext_sens, INPUT);
 	pinMode(rtd_sens, INPUT);
 }
 
-void PISTON::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t piston_pin){
-    pistonType = type; 
-    rtd_sens = rtd_pin;	
-    ext_sens = ext_pin;				
-    piston_pressure = piston_pin;
-    pinMode(rtd_sens, INPUT);
-    pinMode(ext_sens, INPUT);
-    pinMode(piston_pressure, OUTPUT);	
-}
-
-void PISTON::addGrab(uint8_t hold_pin, uint8_t grab_pin){
-    if(pistonType != PUSH){
-        hold_sens = hold_pin;
-        grab_pressure = grab_pin; 
-		pinMode(hold_sens, INPUT);
-        pinMode(grab_pressure, OUTPUT);
-	}
-}
-
-void PISTON::read(){
+void Piston::read(){
 	extended = digitalRead(ext_sens);
 	retracted = digitalRead(rtd_sens);
-    if(not PUSH){
-        holding = digitalRead(hold_sens);
-    }
 }
 
-void PISTON::extend(){
-    digitalWrite(piston_pressure, 1);
+void Piston::scan(){
     read();
 }
 
-void PISTON::retract(){
-    digitalWrite(piston_pressure, 0); 
-    read();
+void Piston::update(){
+    digitalWrite(piston_pin, piston_pressure);
 }
 
-void PISTON::push(){
-    read();
-    if(status(RETRACTED)){
+void Piston::extend(){
+    piston_pressure = HIGH;
+}
+
+void Piston::retract(){
+    piston_pressure = LOW;
+}
+
+void Piston::push(){
+    if(get(RETRACTED)){
         extend();
     }
-    if(status(EXTENDED)){
+    if(get(EXTENDED)){
         retract();
     }
 }
 
-void PISTON::grab(){
-    if(pistonType == VACUUM){
-        digitalWrite(grab_pressure, 1);
-    }else{
-        if(holding){
-            digitalWrite(grab_pressure, 1);
-        }
-    } 
+int16_t Piston::get(int8_t mode){
     read();
-}
-
-void PISTON::drop(){
-    if(pistonType != PUSH){
-        digitalWrite(grab_pressure, 0); 
+    if(mode == RETRACTED){
+        return retracted;
+    }else if(mode == EXTENDED){
+        return extended;
+    }else if(mode == SAFE){
+        if(retracted and not extended){
+            return true;
+        }else{
+            return false;
+        }
     }
 }
 
-int16_t PISTON::status(uint8_t mode){
+
+
+void Grabber::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin, uint8_t hold_pin, uint8_t grab_pin){
+    rtd_sens = rtd_pin;	
+    ext_sens = ext_pin;				
+    piston_pin = push_pin;
+    hold_sens = hold_pin;
+    grabber_pin = grab_pin; 
+}
+
+void Grabber::init(){
+    pinMode(rtd_sens, INPUT);
+    pinMode(ext_sens, INPUT);
+    pinMode(hold_sens, INPUT);
+    pinMode(piston_pin, OUTPUT);	
+    pinMode(grabber_pin, OUTPUT);
+}
+
+void Grabber::read(){
+	extended = digitalRead(ext_sens);
+	retracted = digitalRead(rtd_sens);
+    holding = digitalRead(hold_sens);
+}
+
+void Grabber::update(){
+    read();
+    digitalWrite(piston_pin, piston_pressure);
+    digitalWrite(grabber_pin, grabber_pressure);
+}
+
+void Grabber::grab(){
+    if(grabType == VACUUM){
+        if(wait(1000)){
+            grabber_pressure = HIGH;
+        }
+    }
+    if(grabType == CLAW){
+        if(holding==HIGH){
+            if(wait(1000)){
+                grabber_pressure = HIGH;
+            }
+        }  
+    }
+}
+
+void Grabber::drop(){
+     grabber_pressure = LOW;
+}
+
+int16_t Grabber::get(int8_t mode){
     read();
     if(mode == RETRACTED){
         return retracted;
@@ -89,82 +137,105 @@ int16_t PISTON::status(uint8_t mode){
     }
 } 
 
-
-SHUTTLE::SHUTTLE(uint8_t upper_pin, uint8_t lower_pin){
-	upper_pressure = upper_pin;	
-	lower_pressure = lower_pin;
-    
-    for(uint8_t i = 0; i<max_stops; i++){ //sets all pins for the stops to undefined
-    	stops[i] = NOT_DEF;
+bool Machine::wait(uint64_t dur){
+    wait_time = millis();
+    if(not waiting){
+        wait_start = millis();
+        waiting = true;
+    }
+    if(waiting){
+        if((wait_time-wait_start)>=dur){
+            waiting = false;
+            return true;
+        }
     }
 }
 
-void SHUTTLE::initiate(){
-    pinMode(upper_pressure, OUTPUT);
-	pinMode(lower_pressure, OUTPUT);
+int16_t Machine::status(int8_t mode){
+   return get(mode);
 }
 
-void SHUTTLE::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin){
-    shuttle_arm.config(type, rtd_pin, ext_pin, arm_pin);
-	shuttle_arm.addGrab(hold_pin, grab_pin);
+Shuttle::Shuttle(uint8_t upper, uint8_t lower){
+	upper_pin = upper;	
+	lower_pin = lower;
 }
 
-void SHUTTLE::addStop(uint8_t s_index, int8_t s_pin){
+void Shuttle::init(){
+    for(uint8_t i = 0; i<max_stops; i++){ //sets all pins for the stops to undefined
+    	stops[i] = UNDEFINED;
+    }
+    pinMode(upper_pin, OUTPUT);
+	pinMode(lower_pin, OUTPUT);
+    digitalWrite(upper_pin, upper_pressure);
+    digitalWrite(lower_pin, lower_pressure);
+}
+
+void Shuttle::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin){
+    arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
+}
+
+void Shuttle::scan(){
+    read();
+    arm.scan();
+    if((upper_pressure*lower_pressure) != HIGH){
+        moving = true;
+    }else{
+        moving = false;
+    }
+}
+
+void Shuttle::update(){
+    arm.update();
+    digitalWrite(upper_pin, upper_pressure);
+    digitalWrite(lower_pin, lower_pressure);
+}
+
+void Shuttle::addStop(uint8_t s_index, int8_t s_pin){
 	stops[s_index] = s_pin;
 	stops_amt += (stops[s_index] != -1) ? 1:0;
     pinMode(stops[s_index], INPUT);
 }
 
-void SHUTTLE::read(){
+void Shuttle::read(){
 	for(uint8_t i = 0; i<stops_amt; i++){
-		stop_status[i] = digitalRead(stops[i]);
-		if(stop_status[i] != 0){
+		stop_get[i] = digitalRead(stops[i]);
+		if(stop_get[i] != 0){
             last_stop = i;
         }
 	}
-    current_stop = -1;
+    current_stop = UNDEFINED;
     for(uint8_t i = 0; i<stops_amt; i++){
-		stop_status[i] = digitalRead(stops[i]);
-		if(stop_status[i] != 0){
+		stop_get[i] = digitalRead(stops[i]);
+		if(stop_get[i] != 0){
             current_stop = last_stop;
         }
 	}
 }
 
-void SHUTTLE::forward(){
-    if(shuttle_arm.status(SAFE)){
-        digitalWrite(upper_pressure, 0);
-        digitalWrite(lower_pressure, 1);
-        moving = true;
+void Shuttle::forward(){
+    if(arm.get(SAFE)){
+        upper_pressure  =  LOW;
+        lower_pressure = HIGH;
     }else{
-        digitalWrite(upper_pressure, 1);
-        digitalWrite(lower_pressure, 1); 
+        stop(); 
     }
 }
 
-void SHUTTLE::backward(){
-	if(shuttle_arm.status(SAFE)){
-        digitalWrite(upper_pressure, 1);
-        digitalWrite(lower_pressure, 0);
-        moving = true;
+void Shuttle::backward(){
+	if(arm.get(SAFE)){
+        upper_pressure  =  HIGH;
+        lower_pressure = LOW;
     }else{
-        digitalWrite(upper_pressure, 1);
-        digitalWrite(lower_pressure, 1); 
-        moving = false;
+        stop();
     }
 }
 
-void SHUTTLE::stop(){
-    digitalWrite(upper_pressure, 1);
-    digitalWrite(lower_pressure, 1);
-    moving = false;
+void Shuttle::stop(){
+    upper_pressure  =  HIGH;
+    lower_pressure = HIGH;
 }
 
-void SHUTTLE::maintain(){
-    read();
-}
-
-void SHUTTLE::move(uint8_t pos){
+void Shuttle::move(uint8_t pos){
     if(pos>last_stop){
         forward();
     }else if(pos<last_stop){
@@ -175,51 +246,55 @@ void SHUTTLE::move(uint8_t pos){
 }
 
 
-void SHUTTLE::beginDeliv(uint8_t mode){
+void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
-        if(current_stop != -1){
+        if(current_stop != UNDEFINED){
             if(mode == EXTENDED){
-               shuttle_arm.extend();
-                if(not shuttle_arm.status(SAFE)){
-                    shuttle_arm.grab();
-                    if(shuttle_arm.status(HOLDING) and shuttle_arm.status(EXTENDED)){
-                        shuttle_arm.retract();
-                        delivering = true;
+               arm.extend();
+                if(not arm.get(SAFE) and wait(hifa::sensitivity)){
+                    arm.grab();
+                    if(arm.get(HOLDING) and arm.get(EXTENDED)){
+                        if(wait(hifa::sensitivity)){
+                            arm.retract();
+                            delivering = true;
+                        }
                     } 
-                }else if(mode == RETRACTED){
-                    shuttle_arm.retract();
-                    if(shuttle_arm.status(SAFE)){
-                        shuttle_arm.grab();
+                }     
+            }else if(mode == RETRACTED){
+                    arm.retract();
+                    if(arm.get(SAFE) and wait(hifa::sensitivity)){
+                        arm.grab();
                     }
-                    if(shuttle_arm.status(HOLDING)){
+                    if(arm.get(HOLDING)){
                         delivering = true;
                     }  
-                }     
             }
         }
     }
 }
 
-void SHUTTLE::endDeliv(uint8_t mode){
+void Shuttle::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
-            shuttle_arm.extend();
-            if(shuttle_arm.status(EXTENDED)){
-                shuttle_arm.drop();
-                if(not shuttle_arm.status(HOLDING)){
-                    shuttle_arm.retract();
+            arm.extend();
+            if(arm.get(EXTENDED) and wait(hifa::sensitivity)){
+                arm.drop();
+                if(not arm.get(HOLDING)){
+                    arm.retract();
                     delivering = false;
                 } 
             }  
         }else if(mode == RETRACTED){
-                shuttle_arm.retract();
-                shuttle_arm.drop();
+            arm.retract();
+            if(arm.get(RETRACTED) and wait(hifa::sensitivity)){
+                arm.drop();
                 delivering = false;
+            }
         }
     }
 }
 
-int16_t SHUTTLE::status(uint8_t mode){
+int16_t Shuttle::get(int8_t mode){
     read();
     if(mode == POSITION){
         return last_stop;
@@ -232,54 +307,52 @@ int16_t SHUTTLE::status(uint8_t mode){
     }else if(mode == DELIVERING){
         return delivering;
     }else if(mode == SAFE){
-        return shuttle_arm.status(SAFE);
+        return arm.get(SAFE);
     }
 }
 
 
-CONVEYOR::CONVEYOR(uint8_t pwr, uint8_t plr, uint8_t str, uint8_t end, uint8_t tachom){
+Conveyor::Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom){
     power_relay_pin = pwr;
     polar_relay_pin = plr;
-    start_sens_pin = str;
-    end_sens_pin = end;
+    min_sens_pin = min;
+    max_sens_pin = max;
     tachometer_pin = tachom;
 }
 
-void CONVEYOR::initiate(){
+void Conveyor::init(){
     pinMode(power_relay_pin, OUTPUT);
     pinMode(polar_relay_pin, OUTPUT);
-    pinMode(start_sens_pin, INPUT);
-    pinMode(end_sens_pin, INPUT);
+    pinMode(min_sens_pin, INPUT);
+    pinMode(max_sens_pin, INPUT);
     pinMode(tachometer_pin, INPUT_PULLUP);
 }
 
-void CONVEYOR::setMax(uint16_t maxim){
+void Conveyor::setMax(uint16_t maxim){
     tachometer_max = maxim;
 }
 
-void CONVEYOR::start(){
-    digitalWrite(power_relay_pin, 1);
-    stopped = false;
+void Conveyor::start(){
+    moving = true;
 }
 
-void CONVEYOR::stop(){
-    digitalWrite(power_relay_pin, 0);
-    stopped = true;
+void Conveyor::stop(){
+    moving = false;
 }
 
-void CONVEYOR::forward(){
-    digitalWrite(polar_relay_pin, 0);
+void Conveyor::forward(){
+    direction = FORWARDS;
 }
 
-void CONVEYOR::backward(){
-    digitalWrite(polar_relay_pin, 1);
+void Conveyor::backward(){
+    direction = BACKWARDS;
 }
 
-void CONVEYOR::reset(){
+void Conveyor::reset(){
     reseting = true;
     start();
     backward();
-    if(at_start){
+    if(at_min){
         stop();
         tachometer_val = 0;
         reseting = false;
@@ -289,15 +362,28 @@ void CONVEYOR::reset(){
     }
 }
 
-void CONVEYOR::maintain(){
-    at_start = digitalRead(start_sens_pin);
-    at_end = digitalRead(end_sens_pin);
-    if(at_end){
-        req_reset = true;
+void Conveyor::scan(){
+    at_min = digitalRead(min_sens_pin);
+    at_max = digitalRead(max_sens_pin);
+
+    if(at_min){
+        stop(); 
+        if(wait(1000)){
+            forward();
+            tachometer_val = 0;
+        }
+    }
+
+    if(at_max){
+        stop(); 
+        if(wait(1000)){
+            backward();
+            tachometer_val = 0;
+        }
     }
     
     if(not req_reset){
-        if(not reseting and not stopped){
+        if(not reseting and moving){
             if(not tachometer_read){
                 if(digitalRead(tachometer_pin)){
                     tachometer_val +=1;
@@ -314,30 +400,82 @@ void CONVEYOR::maintain(){
     }
 }
 
-void CONVEYOR::move(uint16_t pos){
-    start();
-    tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
-    if(pos>tachometer_val_mapped){
-        forward();
-    }else if(pos<tachometer_val_mapped){
-        req_reset = true;
+void Conveyor::update(){
+    if(moving){
+        digitalWrite(power_relay_pin, HIGH);
     }else{
-        stop();
+        digitalWrite(power_relay_pin, LOW);
+    }
+    
+    if(direction==FORWARDS){
+        digitalWrite(polar_relay_pin, LOW);
+    }else{
+        digitalWrite(polar_relay_pin, HIGH);
     }
 }
 
-int16_t CONVEYOR::status(uint8_t mode){
+void Conveyor::move(int16_t pos){
+    start();
+    tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
+
+    if(pos != (MAX or MIN)){
+        if(direction==BACKWARDS){
+            target_pos = 100 - pos;
+        }else{
+            target_pos = pos;
+        }
+        if(target_pos>tachometer_val_mapped){
+            forward();
+        }else if(target_pos<tachometer_val_mapped){
+            if(tachometer_val_mapped>50){
+                if(direction==FORWARDS){
+                    forward();
+                }else{
+                    backward();
+                }
+            }else{
+                reset();
+            }
+        }else{
+            stop();
+        }
+    }
+
+    if(pos==MIN){
+        if(at_min){
+            stop();
+        }else if(tachometer_val_mapped > 0){
+            backward();
+        }else{
+            backward();
+        }
+    }else if(pos==MAX){
+        if(at_min){
+            stop();
+        }else{
+            forward();
+        }
+    }
+}
+
+int16_t Conveyor::get(int8_t mode){
     if(mode == RESET_REQ){
         return req_reset;
     }else if(mode == RESETING){
         return reseting;
-    }else if(mode == STOPPED){
-        return stopped;
-    }else if(mode == START){
-        return at_start;
-    }else if(mode == END){
-        return at_end;
+    }else if(mode == MOVING){
+        return moving;
+    }else if(mode == MIN){
+        return at_min;
+    }else if(mode == MAX){
+        return at_max;
     }else if(mode == POSITION){
         return tachometer_val_mapped;
+    }else if(mode == DIRECTION){
+        return direction;
+    }else if(mode == FORWARDS){
+        return (direction == FORWARDS) ? 1:0;
+    }else if(mode == BACKWARDS){
+        return (direction == BACKWARDS) ? 1:0;
     }
 }
