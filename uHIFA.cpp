@@ -344,11 +344,19 @@ void Conveyor::stop(){
 }
 
 void Conveyor::forward(){
-    direction = FORWARDS;
+    if(default_direction){
+        direction = FORWARDS;
+    }else{
+        direction = BACKWARDS;
+    }
 }
 
 void Conveyor::backward(){
-    direction = BACKWARDS;
+    if(default_direction){
+        direction = BACKWARDS;
+    }else{
+        direction = FORWARDS;
+    }
 }
 
 void Conveyor::reset(){
@@ -422,7 +430,7 @@ void Conveyor::move(int16_t pos){
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
     if(pos != (MAX or MIN)){
         if(not overshot){
-            if(direction==BACKWARDS){
+            if(not default_direction){
                 target_pos = 100 - pos;
             }else{
                 target_pos = pos;
@@ -465,7 +473,7 @@ void Conveyor::move(int16_t pos){
             backward();
         }
     }else if(pos==MAX){
-        if(at_min){
+        if(at_max){
             stop();
         }else{
             forward();
