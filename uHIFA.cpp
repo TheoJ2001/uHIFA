@@ -361,6 +361,7 @@ void Conveyor::backward(){
 
 void Conveyor::reset(){
     reseting = true;
+    default_direction = true;
     start();
     backward();
     if(at_min){
