@@ -19,6 +19,19 @@ int16_t Machine::status(int8_t mode){
 }
 
 
+bool Piston::wait(uint64_t dur){
+    wait_time = millis();
+    if(not waiting){
+        wait_start = millis();
+        waiting = true;
+    }
+    if(waiting){
+        if((wait_time-wait_start)>=dur){
+            waiting = false;
+            return true;
+        }
+    }
+}
 
 void Piston::config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin){
     rtd_sens = rtd_pin;	
@@ -26,7 +39,7 @@ void Piston::config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin){
     piston_pin = push_pin;
 }
 
-void Piston::initiate(){
+void Piston::init(){
     pinMode(piston_pin, OUTPUT);		
     pinMode(ext_sens, INPUT);
 	pinMode(rtd_sens, INPUT);
@@ -37,7 +50,11 @@ void Piston::read(){
 	retracted = digitalRead(rtd_sens);
 }
 
-void Piston::maintain(){
+void Piston::scan(){
+    read();
+}
+
+void Piston::update(){
     digitalWrite(piston_pin, piston_pressure);
 }
 
@@ -83,7 +100,7 @@ void Grabber::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t pus
     grabber_pin = grab_pin; 
 }
 
-void Grabber::initiate(){
+void Grabber::init(){
     pinMode(rtd_sens, INPUT);
     pinMode(ext_sens, INPUT);
     pinMode(hold_sens, INPUT);
@@ -97,7 +114,7 @@ void Grabber::read(){
     holding = digitalRead(hold_sens);
 }
 
-void Grabber::maintain(){
+void Grabber::update(){
     read();
     digitalWrite(piston_pin, piston_pressure);
     digitalWrite(grabber_pin, grabber_pressure);
@@ -105,11 +122,15 @@ void Grabber::maintain(){
 
 void Grabber::grab(){
     if(grabType == VACUUM){
-        grabber_pressure = HIGH;
+        if(wait(1000)){
+            grabber_pressure = HIGH;
+        }
     }
     if(grabType == CLAW){
         if(holding==HIGH){
-            grabber_pressure = HIGH;
+            if(wait(1000)){
+                grabber_pressure = HIGH;
+            }
         }  
     }
 }
@@ -140,13 +161,12 @@ int16_t Grabber::get(int8_t mode){
 Shuttle::Shuttle(uint8_t upper, uint8_t lower){
 	upper_pin = upper;	
 	lower_pin = lower;
-    
-    for(uint8_t i = 0; i<max_stops; i++){ //sets all pins for the stops to undefined
-    	stops[i] = NOT_DEF;
-    }
 }
 
-void Shuttle::initiate(){
+void Shuttle::init(){
+    for(uint8_t i = 0; i<max_stops; i++){ //sets all pins for the stops to undefined
+    	stops[i] = UNDEFINED;
+    }
     pinMode(upper_pin, OUTPUT);
 	pinMode(lower_pin, OUTPUT);
     digitalWrite(upper_pin, upper_pressure);
@@ -157,14 +177,18 @@ void Shuttle::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm
     arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
 }
 
-void Shuttle::maintain(){
-    arm.maintain();
+void Shuttle::scan(){
     read();
+    arm.scan();
     if((upper_pressure*lower_pressure) != HIGH){
         moving = true;
     }else{
         moving = false;
     }
+}
+
+void Shuttle::update(){
+    arm.update();
     digitalWrite(upper_pin, upper_pressure);
     digitalWrite(lower_pin, lower_pressure);
 }
@@ -182,7 +206,7 @@ void Shuttle::read(){
             last_stop = i;
         }
 	}
-    current_stop = -1;
+    current_stop = UNDEFINED;
     for(uint8_t i = 0; i<stops_amt; i++){
 		stop_get[i] = digitalRead(stops[i]);
 		if(stop_get[i] != 0){
@@ -227,19 +251,21 @@ void Shuttle::move(uint8_t pos){
 
 void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
-        if(current_stop != -1){
+        if(current_stop != UNDEFINED){
             if(mode == EXTENDED){
                arm.extend();
-                if(not arm.get(SAFE) and wait(1000)){
+                if(not arm.get(SAFE) and wait(hifa::sensitivity)){
                     arm.grab();
                     if(arm.get(HOLDING) and arm.get(EXTENDED)){
-                        arm.retract();
-                        delivering = true;
+                        if(wait(hifa::sensitivity)){
+                            arm.retract();
+                            delivering = true;
+                        }
                     } 
                 }     
             }else if(mode == RETRACTED){
                     arm.retract();
-                    if(arm.get(SAFE) and wait(1000)){
+                    if(arm.get(SAFE) and wait(hifa::sensitivity)){
                         arm.grab();
                     }
                     if(arm.get(HOLDING)){
@@ -254,7 +280,7 @@ void Shuttle::endDeliv(uint8_t mode){
     if(delivering){
         if(mode == EXTENDED){
             arm.extend();
-            if(arm.get(EXTENDED) and wait(1000)){
+            if(arm.get(EXTENDED) and wait(hifa::sensitivity)){
                 arm.drop();
                 if(not arm.get(HOLDING)){
                     arm.retract();
@@ -263,7 +289,7 @@ void Shuttle::endDeliv(uint8_t mode){
             }  
         }else if(mode == RETRACTED){
             arm.retract();
-            if(arm.get(RETRACTED) and wait(1000)){
+            if(arm.get(RETRACTED) and wait(hifa::sensitivity)){
                 arm.drop();
                 delivering = false;
             }
@@ -297,7 +323,7 @@ Conveyor::Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t t
     tachometer_pin = tachom;
 }
 
-void Conveyor::initiate(){
+void Conveyor::init(){
     pinMode(power_relay_pin, OUTPUT);
     pinMode(polar_relay_pin, OUTPUT);
     pinMode(min_sens_pin, INPUT);
@@ -339,7 +365,7 @@ void Conveyor::reset(){
     }
 }
 
-void Conveyor::maintain(){
+void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
 
@@ -375,7 +401,9 @@ void Conveyor::maintain(){
     }else{
         reset();
     }
+}
 
+void Conveyor::update(){
     if(moving){
         digitalWrite(power_relay_pin, HIGH);
     }else{
