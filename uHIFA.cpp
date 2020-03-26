@@ -380,7 +380,7 @@ void Conveyor::scan(){
     if(at_min){
         stop(); 
         if(wait(1000)){
-            forward();
+            default_direction = true;
             tachometer_val = 0;
         }
     }
@@ -388,7 +388,7 @@ void Conveyor::scan(){
     if(at_max){
         stop(); 
         if(wait(1000)){
-            backward();
+            default_direction = false;
             tachometer_val = 0;
         }
     }
