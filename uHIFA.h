@@ -155,6 +155,7 @@ class Conveyor : public Machine{
     bool reseting;
     bool overshot;
     bool moving;
+    bool direction_change = false;
     bool default_direction = true;
     int8_t direction = FORWARDS;
     

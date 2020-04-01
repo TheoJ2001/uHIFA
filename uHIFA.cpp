@@ -9,6 +9,7 @@ bool Piston::wait(uint64_t dur){
     if(waiting){
         if((wait_time-wait_start)>=dur){
             waiting = false;
+            dur = 0;
             return true;
         }
     }
@@ -148,6 +149,7 @@ bool Machine::wait(uint64_t dur){
     if(waiting){
         if((wait_time-wait_start)>=dur){
             waiting = false;
+            dur = 0;
             return true;
         }
     }
@@ -377,22 +379,6 @@ void Conveyor::reset(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-
-    if(at_min and not reseting){
-        stop(); 
-        if(wait(1000)){
-            default_direction = true;
-            tachometer_val = 0;
-        }
-    }
-
-    if(at_max and not reseting){
-        stop(); 
-        if(wait(1000)){
-            default_direction = false;
-            tachometer_val = 0;
-        }
-    }
     
     if(not req_reset){
         if(not (reseting or overshot) and moving){
@@ -413,6 +399,28 @@ void Conveyor::scan(){
 }
 
 void Conveyor::update(){
+    if(at_min and not (reseting or direction_change)){
+        stop(); 
+        direction_change = true; 
+        if(wait(1000)){
+            default_direction = true;
+            tachometer_val = 0;
+        }
+    }
+
+    if(at_max and not (reseting or direction_change)){
+        stop();
+        direction_change = true; 
+        if(wait(1000)){
+            default_direction = false;
+            tachometer_val = 0;
+        }
+    }
+
+    if(not (at_max or at_min)){
+        direction_change = false;
+    }
+
     if(moving){
         digitalWrite(power_relay_pin, HIGH);
     }else{
@@ -452,13 +460,11 @@ void Conveyor::move(int16_t pos){
                 forward();
                 if(at_max){
                     overshot = false;
-                    tachometer_val = 0;
                 }
             }else{
                 backward();
                 if(at_min){
                     overshot = false;
-                    tachometer_val = 0;
                 }
             }
         }
@@ -468,8 +474,6 @@ void Conveyor::move(int16_t pos){
     if(pos==MIN){
         if(at_min){
             stop();
-        }else if(tachometer_val_mapped > 0){
-            backward();
         }else{
             backward();
         }
