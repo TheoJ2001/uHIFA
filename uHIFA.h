@@ -18,12 +18,14 @@
 #define HOLDING 0x3
 #define POSITION 0x4
 #define MOVING 0x5
-#define DELIVERING 0x6
-#define RESET_REQ 0x7
-#define RESETING 0x8
-#define DIRECTION 0x9
-#define FORWARDS 0xA
-#define BACKWARDS 0xB
+#define SEQUENCE_INDEX 0x6
+#define DELIVERING 0x7
+#define RESET_REQ 0x8
+#define RESETING 0x9
+#define DIRECTION 0xA
+#define DIRECTION_DEFAULT 0xB
+#define FORWARDS 0xC
+#define BACKWARDS 0xD
 
 
 class Piston{
@@ -122,6 +124,7 @@ class Shuttle : public Machine{
     
     int8_t last_stop = -1;
     int8_t current_stop;
+    uint8_t deliv_seq_index = 0;
     bool delivering = false; 
     bool moving = false;
     
@@ -155,7 +158,8 @@ class Conveyor : public Machine{
     bool reseting;
     bool overshot;
     bool moving;
-    bool direction_change = false;
+    bool unsafe = false;
+    bool in_safety_proc = false;
     bool default_direction = true;
     int8_t direction = FORWARDS;
     

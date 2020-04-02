@@ -254,25 +254,36 @@ void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
         if(current_stop != UNDEFINED){
             if(mode == EXTENDED){
-                if(not arm.get(EXTENDED)){
+                if(not arm.get(EXTENDED) and (deliv_seq_index==0)){
                     arm.extend();
+                    deliv_seq_index += 1;
                 }
-                if(not arm.get(SAFE) and wait(1000)){
+                if(not arm.get(SAFE) and wait(1000) and (deliv_seq_index==1)){
                     arm.grab();
+                    deliv_seq_index +=1;
                 }
-                if(arm.get(HOLDING) and arm.get(EXTENDED)){
+                if(arm.get(HOLDING) and arm.get(EXTENDED)and (deliv_seq_index==2)){
                     if(wait(1000)){
                         arm.retract();
                         delivering = true;
+                        deliv_seq_index = 0;
                     }
                 }      
             }else if(mode == RETRACTED){
-                    arm.retract();
-                    if(arm.get(SAFE) and wait(1000)){
-                        arm.grab();
+                    if(not arm.get(RETRACTED) and (deliv_seq_index==0)){
+                        arm.retract();
+                        deliv_seq_index += 1;
+                    }else{
+                        deliv_seq_index += 1;
                     }
-                    if(arm.get(HOLDING)){
+                    
+                    if(arm.get(SAFE) and wait(1000) and (deliv_seq_index==1)){
+                        arm.grab();
+                        deliv_seq_index += 1;
+                    }
+                    if(arm.get(HOLDING) and (deliv_seq_index==2)){
                         delivering = true;
+                        deliv_seq_index = 0;
                     }  
             }
         }
@@ -313,6 +324,8 @@ int16_t Shuttle::get(int8_t mode){
         return delivering;
     }else if(mode == SAFE){
         return arm.get(SAFE);
+    }else if(mode == SEQUENCE_INDEX){
+        return deliv_seq_index;
     }
 }
 
@@ -366,65 +379,63 @@ void Conveyor::reset(){
     default_direction = true;
     start();
     backward();
-    if(at_min){
-        stop();
-        tachometer_val = 0;
-        reseting = false;
-        if(req_reset){
-            req_reset = false;
-        }
-    }
 }
 
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
     
-    if(not req_reset){
-        if(not (reseting or overshot) and moving){
-            if(not tachometer_read){
-                if(digitalRead(tachometer_pin)){
-                    tachometer_val +=1;
-                    tachometer_read = true;
-                }
-            }else{
-                if(not digitalRead(tachometer_pin)){
-                    tachometer_read = false;
-                } 
+    if(not (reseting or overshot) and moving){
+        if(not tachometer_read){
+            if(digitalRead(tachometer_pin)){
+                tachometer_val +=1;
+                tachometer_read = true;
             }
+        }else{
+            if(not digitalRead(tachometer_pin)){
+                tachometer_read = false;
+            } 
         }
-    }else{
-        reset();
     }
 }
 
 void Conveyor::update(){
-    if(at_min and not (reseting or direction_change)){
+    if(at_min and not in_safety_proc){
         stop(); 
-        direction_change = true; 
-        if(wait(1000)){
-            default_direction = true;
-            tachometer_val = 0;
-        }
+        in_safety_proc = true;
+        tachometer_val = 0;
+        default_direction = true;
+        req_reset = false;
+        reseting = false;
     }
 
-    if(at_max and not (reseting or direction_change)){
+    if(at_max and not in_safety_proc){
         stop();
-        direction_change = true; 
-        if(wait(1000)){
-            default_direction = false;
-            tachometer_val = 0;
-        }
+        in_safety_proc = true;
+        tachometer_val = 0;
+        default_direction = false;
     }
 
-    if(not (at_max or at_min)){
-        direction_change = false;
+    if(wait(1000) and in_safety_proc){
+        forward();
+        start();
     }
 
-    if(moving){
-        digitalWrite(power_relay_pin, HIGH);
+    if((not at_max and not at_min) and in_safety_proc){
+        in_safety_proc = false;
+        stop();
+    }
+
+    if(in_safety_proc){
+        unsafe = true;
     }else{
+        unsafe = false;
+    }
+
+    if(not moving){
         digitalWrite(power_relay_pin, LOW);
+    }else{
+        digitalWrite(power_relay_pin, HIGH);
     }
     
     if(direction==FORWARDS){
@@ -437,7 +448,7 @@ void Conveyor::update(){
 void Conveyor::move(int16_t pos){
     start();
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
-    if(pos != (MAX or MIN)){
+    if(pos != (MAX or MIN) and get(SAFE)){
         if(not overshot){
             if(not default_direction){
                 target_pos = 100 - pos;
@@ -468,16 +479,13 @@ void Conveyor::move(int16_t pos){
                 }
             }
         }
-        
-    }
-
-    if(pos==MIN){
+    }else if(pos==MIN and get(SAFE)){
         if(at_min){
             stop();
         }else{
             backward();
         }
-    }else if(pos==MAX){
+    }else if(pos==MAX and get(SAFE)){
         if(at_max){
             stop();
         }else{
@@ -501,9 +509,13 @@ int16_t Conveyor::get(int8_t mode){
         return tachometer_val_mapped;
     }else if(mode == DIRECTION){
         return direction;
+    }else if(mode == DIRECTION_DEFAULT){
+        return default_direction;
     }else if(mode == FORWARDS){
         return (direction == FORWARDS) ? 1:0;
     }else if(mode == BACKWARDS){
         return (direction == BACKWARDS) ? 1:0;
+    }else if(mode == SAFE){
+        return unsafe ? 0:1;
     }
 }
