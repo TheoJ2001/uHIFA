@@ -176,6 +176,7 @@ void Shuttle::init(){
 
 void Shuttle::config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin){
     arm.config(type, rtd_pin, ext_pin, arm_pin, hold_pin, grab_pin);
+    arm.init();
 }
 
 void Shuttle::scan(){
@@ -343,7 +344,7 @@ void Conveyor::init(){
     pinMode(polar_relay_pin, OUTPUT);
     pinMode(min_sens_pin, INPUT);
     pinMode(max_sens_pin, INPUT);
-    pinMode(tachometer_pin, INPUT_PULLUP);
+    pinMode(tachometer_pin, INPUT);
 }
 
 void Conveyor::setMax(uint16_t maxim){
@@ -384,8 +385,7 @@ void Conveyor::reset(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-    
-    if(not (reseting or overshot) and moving){
+    if(moving){
         if(not tachometer_read){
             if(digitalRead(tachometer_pin)){
                 tachometer_val +=1;
@@ -403,7 +403,6 @@ void Conveyor::update(){
     if(at_min and not in_safety_proc){
         stop(); 
         in_safety_proc = true;
-        tachometer_val = 0;
         default_direction = true;
         req_reset = false;
         reseting = false;
@@ -412,8 +411,9 @@ void Conveyor::update(){
     if(at_max and not in_safety_proc){
         stop();
         in_safety_proc = true;
-        tachometer_val = 0;
         default_direction = false;
+        req_reset = false;
+        reseting = false;
     }
 
     if(wait(1000) and in_safety_proc){
@@ -423,6 +423,8 @@ void Conveyor::update(){
 
     if((not at_max and not at_min) and in_safety_proc){
         in_safety_proc = false;
+        overshot = false;
+        tachometer_val = 0;
         stop();
     }
 
@@ -466,30 +468,28 @@ void Conveyor::move(int16_t pos){
             }else{
                 stop();
             }
-        }else{
-            if(direction==FORWARDS){
-                forward();
-                if(at_max){
-                    overshot = false;
-                }
-            }else{
-                backward();
-                if(at_min){
-                    overshot = false;
-                }
-            }
+        }else if(overshot){
+            forward();
         }
     }else if(pos==MIN and get(SAFE)){
         if(at_min){
             stop();
         }else{
-            backward();
+            if(default_direction){
+                backward();
+            }else{
+                forward();
+            }
         }
     }else if(pos==MAX and get(SAFE)){
         if(at_max){
             stop();
         }else{
-            forward();
+             if(default_direction){
+                forward();
+            }else{
+                backward();
+            }
         }
     }
 }

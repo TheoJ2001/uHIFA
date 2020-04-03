@@ -156,7 +156,7 @@ class Conveyor : public Machine{
     
     bool req_reset = true;
     bool reseting;
-    bool overshot;
+    bool overshot = false;
     bool moving;
     bool unsafe = false;
     bool in_safety_proc = false;
