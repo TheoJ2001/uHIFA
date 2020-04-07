@@ -259,7 +259,7 @@ void Shuttle::beginDeliv(uint8_t mode){
                     arm.extend();
                     deliv_seq_index += 1;
                 }
-                if(not arm.get(SAFE) and wait(1000) and (deliv_seq_index==1)){
+                if(arm.get(EXTENDED) and wait(1000) and (deliv_seq_index==1)){
                     arm.grab();
                     deliv_seq_index +=1;
                 }
