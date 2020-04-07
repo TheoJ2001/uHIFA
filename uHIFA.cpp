@@ -106,9 +106,7 @@ void Grabber::update(){
 
 void Grabber::grab(){
     if(grabType == VACUUM){
-        if(wait(1000)){
-            grabber_pressure = HIGH;
-        }
+        grabber_pressure = HIGH;
     }
     if(grabType == CLAW){
         if(holding==HIGH){
