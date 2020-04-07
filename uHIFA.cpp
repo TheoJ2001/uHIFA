@@ -263,12 +263,10 @@ void Shuttle::beginDeliv(uint8_t mode){
                     arm.grab();
                     deliv_seq_index +=1;
                 }
-                if(arm.get(HOLDING) and arm.get(EXTENDED)and (deliv_seq_index==2)){
-                    if(wait(1000)){
-                        arm.retract();
-                        delivering = true;
-                        deliv_seq_index = 0;
-                    }
+                if(arm.get(HOLDING) and wait(1000) and (deliv_seq_index==2)){
+                    arm.retract();
+                    delivering = true;
+                    deliv_seq_index = 0;
                 }      
             }else if(mode == RETRACTED){
                     if(not arm.get(RETRACTED) and (deliv_seq_index==0)){
