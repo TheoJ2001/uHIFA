@@ -450,16 +450,15 @@ void Conveyor::update(){
 
 void Conveyor::move(int16_t pos){
     start();
-    tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
     if(pos != (MAX or MIN) and get(SAFE)){
         if(not default_direction){
-            target_pos = 100 - pos;
+            target_pos = tachometer_max - pos;
         }else{
             target_pos = pos;
         }
-        if(target_pos>tachometer_val_mapped){
+        if(target_pos>tachometer_val){
             forward();
-        }else if(target_pos<tachometer_val_mapped){
+        }else if(target_pos<tachometer_val){
             reset();
         }else{
             stop();
@@ -499,7 +498,7 @@ int16_t Conveyor::get(int8_t mode){
     }else if(mode == MAX){
         return at_max;
     }else if(mode == POSITION){
-        return tachometer_val_mapped;
+        return tachometer_val;
     }else if(mode == DIRECTION){
         return direction;
     }else if(mode == DIRECTION_DEFAULT){
