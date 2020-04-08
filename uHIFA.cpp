@@ -412,14 +412,13 @@ void Conveyor::update(){
         reseting = false;
     }
 
-    if(wait(1000) and in_safety_proc){
+    if(wait(200) and in_safety_proc){
         forward();
         start();
     }
 
     if((not at_max and not at_min) and in_safety_proc){
         in_safety_proc = false;
-        overshot = false;
         tachometer_val = 0;
         stop();
     }
@@ -447,25 +446,17 @@ void Conveyor::move(int16_t pos){
     start();
     tachometer_val_mapped = map(tachometer_val, 0, tachometer_max, 0, 100);
     if(pos != (MAX or MIN) and get(SAFE)){
-        if(not overshot){
-            if(not default_direction){
-                target_pos = 100 - pos;
-            }else{
-                target_pos = pos;
-            }
-            if(target_pos>tachometer_val_mapped){
-                forward();
-            }else if(target_pos<tachometer_val_mapped){
-                if(tachometer_val_mapped>50){
-                    overshot = true;
-                }else{
-                    reset();
-                }
-            }else{
-                stop();
-            }
-        }else if(overshot){
+        if(not default_direction){
+            target_pos = 100 - pos;
+        }else{
+            target_pos = pos;
+        }
+        if(target_pos>tachometer_val_mapped){
             forward();
+        }else if(target_pos<tachometer_val_mapped){
+            reset();
+        }else{
+            stop();
         }
     }else if(pos==MIN and get(SAFE)){
         if(at_min){
