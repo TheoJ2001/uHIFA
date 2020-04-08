@@ -379,13 +379,6 @@ void Conveyor::backward(){
     }
 }
 
-void Conveyor::reset(){
-    reseting = true;
-    default_direction = true;
-    start();
-    backward();
-}
-
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
@@ -407,7 +400,6 @@ void Conveyor::update(){
         stop(); 
         in_safety_proc = true;
         default_direction = true;
-        req_reset = false;
         reseting = false;
         tachometer_val = 0;
     }
@@ -416,7 +408,6 @@ void Conveyor::update(){
         stop();
         in_safety_proc = true;
         default_direction = false;
-        req_reset = false;
         reseting = false;
         tachometer_val = 0;
     }
@@ -460,8 +451,6 @@ void Conveyor::move(int16_t pos){
         }
         if(target_pos>tachometer_val){
             forward();
-        }else if(target_pos<tachometer_val){
-            reset();
         }else{
             stop();
         }

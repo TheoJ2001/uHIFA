@@ -140,7 +140,6 @@ class Conveyor : public Machine{
     void setMax(uint16_t maxim);
     void scan();
     void update();
-    void reset();
     void move(int16_t pos);
 
     int16_t get(int8_t mode);
