@@ -466,27 +466,20 @@ void Conveyor::move(int16_t pos){
             stop();
         }
     }else if(pos==MIN and get(SAFE)){
-        if(at_min){
-            stop();
+        if(default_direction){
+            backward();
         }else{
-            if(default_direction){
-                backward();
-            }else{
-                forward();
-            }
+            forward();
         }
     }else if(pos==MAX and get(SAFE)){
-        if(at_max){
-            stop();
+        if(default_direction){
+            forward();
         }else{
-             if(default_direction){
-                forward();
-            }else{
-                backward();
-            }
+            backward();
         }
     }
 }
+
 
 int16_t Conveyor::get(int8_t mode){
     if(mode == RESET_REQ){
