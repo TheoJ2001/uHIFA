@@ -408,6 +408,7 @@ void Conveyor::update(){
         default_direction = true;
         req_reset = false;
         reseting = false;
+        tachometer_val = 0;
     }
 
     if(at_max and not in_safety_proc){
