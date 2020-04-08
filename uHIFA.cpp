@@ -253,21 +253,21 @@ void Shuttle::beginDeliv(uint8_t mode){
     if(not delivering){
         if(current_stop != UNDEFINED){
             if(mode == EXTENDED){
-                if(not arm.get(EXTENDED) and (deliv_seq_index==0)){
+                if(not arm.get(EXTENDED) and deliv_seq_index==0x0){
                     arm.extend();
-                    deliv_seq_index += 1;
+                    deliv_seq_index = 0x1;
                 }
-                if(arm.get(EXTENDED) and (deliv_seq_index==1)){
+                if(arm.get(EXTENDED) and deliv_seq_index==0x1){
                     arm.grab();
-                    deliv_seq_index +=1;
+                    deliv_seq_index = 0x2;
                 }
-                if(arm.get(HOLDING) and wait(1000) and (deliv_seq_index==2)){
+                if(arm.get(HOLDING) and wait(1000) and deliv_seq_index==0x2){
                     arm.retract();
                     delivering = true;
-                    deliv_seq_index = 0;
+                    deliv_seq_index = 0x0;
                 }      
             }else if(mode == RETRACTED){
-                    if(not arm.get(RETRACTED) and (deliv_seq_index==0)){
+                    if(not arm.get(RETRACTED) and deliv_seq_index==0){
                         arm.retract();
                         deliv_seq_index += 1;
                     }else{
