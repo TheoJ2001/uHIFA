@@ -348,7 +348,7 @@ void Conveyor::init(){
     pinMode(polar_relay_pin, OUTPUT);
     pinMode(min_sens_pin, INPUT);
     pinMode(max_sens_pin, INPUT);
-    pinMode(tachometer_pin, INPUT);
+    pinMode(tachometer_pin, INPUT_PULLUP);
 }
 
 void Conveyor::setMax(uint16_t maxim){
