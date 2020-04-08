@@ -389,17 +389,15 @@ void Conveyor::reset(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-    if(moving){
-        if(not tachometer_read){
-            if(digitalRead(tachometer_pin)){
-                tachometer_val +=1;
-                tachometer_read = true;
-            }
-        }else{
-            if(not digitalRead(tachometer_pin)){
-                tachometer_read = false;
-            } 
+    if(not tachometer_read){
+        if(digitalRead(tachometer_pin)){
+            tachometer_val +=1;
+            tachometer_read = true;
         }
+    }else{
+        if(not digitalRead(tachometer_pin)){
+            tachometer_read = false;
+        } 
     }
 }
 
@@ -418,6 +416,7 @@ void Conveyor::update(){
         default_direction = false;
         req_reset = false;
         reseting = false;
+        tachometer_val = 0;
     }
 
     if(wait(200) and in_safety_proc){
@@ -427,7 +426,6 @@ void Conveyor::update(){
 
     if((not at_max and not at_min) and in_safety_proc){
         in_safety_proc = false;
-        tachometer_val = 0;
         stop();
     }
 
