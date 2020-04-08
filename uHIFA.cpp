@@ -389,13 +389,14 @@ void Conveyor::reset(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
+    tachometer_state = digitalRead(tachometer_pin);
     if(not tachometer_read){
-        if(digitalRead(tachometer_pin)){
+        if(tachometer_state){
             tachometer_val +=1;
             tachometer_read = true;
         }
     }else{
-        if(not digitalRead(tachometer_pin)){
+        if(not tachometer_state){
             tachometer_read = false;
         } 
     }

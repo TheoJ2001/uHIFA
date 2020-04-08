@@ -167,8 +167,8 @@ class Conveyor : public Machine{
 
     uint16_t tachometer_max;
     uint16_t tachometer_val;
-    uint16_t tachometer_val_mapped;
     
+    bool tachometer_state;
     bool tachometer_read;
     
     void start();
