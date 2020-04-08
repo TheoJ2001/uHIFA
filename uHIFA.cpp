@@ -242,10 +242,13 @@ void Shuttle::stop(){
 
 void Shuttle::move(uint8_t pos){
     if(pos>last_stop){
+        arm.retract();
         forward();
     }else if(pos<last_stop){
+        arm.retract();
         backward();
     }else if(pos == current_stop){
+        arm.retract();
         stop();
     }
 }
