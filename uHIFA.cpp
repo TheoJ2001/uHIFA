@@ -220,7 +220,8 @@ void Shuttle::forward(){
         upper_pressure  =  LOW;
         lower_pressure = HIGH;
     }else{
-        stop(); 
+        stop();
+        arm.retract(); 
     }
 }
 
@@ -230,25 +231,22 @@ void Shuttle::backward(){
         lower_pressure = LOW;
     }else{
         stop();
+        arm.retract();
     }
 }
 
 void Shuttle::stop(){
-    upper_pressure  =  HIGH;
+    upper_pressure  = HIGH;
     lower_pressure = HIGH;
 }
 
 void Shuttle::move(uint8_t pos){
-    if(arm.get(SAFE)){
-        if(pos>last_stop){
-            forward();
-        }else if(pos<last_stop){
-            backward();
-        }else if(pos == current_stop){
-            stop();
-        }
-    }else{
-        arm.retract();
+    if(pos>last_stop){
+        forward();
+    }else if(pos<last_stop){
+        backward();
+    }else if(pos == current_stop){
+        stop();
     }
 }
 
