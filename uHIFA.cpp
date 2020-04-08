@@ -304,7 +304,10 @@ void Shuttle::endDeliv(uint8_t mode){
             arm.retract();
             if(arm.get(RETRACTED) and wait(1000)){
                 arm.drop();
-                delivering = false;
+                if(not arm.get(HOLDING)){
+                    arm.retract();
+                    delivering = false;
+                } 
             }
         }
     }
