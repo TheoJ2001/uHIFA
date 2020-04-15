@@ -443,7 +443,7 @@ void Conveyor::move(int16_t pos){
         }else{
             target_pos = pos;
         }
-        if(target_pos<tachometer_val){
+        if(target_pos<=tachometer_val){
             stop();
         }else{
             forward();
