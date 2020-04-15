@@ -348,7 +348,12 @@ void Conveyor::init(){
     pinMode(polar_relay_pin, OUTPUT);
     pinMode(min_sens_pin, INPUT);
     pinMode(max_sens_pin, INPUT);
-    pinMode(tachometer_pin, INPUT_PULLUP);
+    pinMode(tachometer_pin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(tachometer_pin), this->tachometer_ISR, CHANGE);
+}
+
+void Conveyor::tachometer_ISR(){
+    tachometer_val++;
 }
 
 void Conveyor::setMax(uint16_t maxim){
@@ -382,17 +387,7 @@ void Conveyor::backward(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-    tachometer_state = digitalRead(tachometer_pin);
-    if(not tachometer_read){
-        if(tachometer_state){
-            tachometer_val +=1;
-            tachometer_read = true;
-        }
-    }else{
-        if(not tachometer_state){
-            tachometer_read = false;
-        } 
-    }
+    tachometer_ISR();
 }
 
 void Conveyor::update(){

@@ -27,7 +27,6 @@
 #define FORWARDS 0xC
 #define BACKWARDS 0xD
 
-
 class Piston{
   public:
     Piston() = default;
@@ -165,10 +164,12 @@ class Conveyor : public Machine{
     uint8_t target_pos;
 
     uint16_t tachometer_max;
-    uint16_t tachometer_val;
     
     bool tachometer_state;
     bool tachometer_read;
+    
+    uint16_t tachometer_val;
+    void tachometer_ISR();
     
     void start();
     void stop();
