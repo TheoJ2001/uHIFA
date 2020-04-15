@@ -390,7 +390,7 @@ void Conveyor::scan(){
 }
 
 void Conveyor::update(){
-    if(at_min and not in_safety_proc){
+    if(at_min and (not in_safety_proc and get(BACKWARDS))){
         stop(); 
         in_safety_proc = true;
         default_direction = true;
@@ -398,7 +398,7 @@ void Conveyor::update(){
         tachometer_val = 0;
     }
 
-    if(at_max and not in_safety_proc){
+    if(at_max and (not in_safety_proc and get(FORWARDS))){
         stop();
         in_safety_proc = true;
         default_direction = false;
