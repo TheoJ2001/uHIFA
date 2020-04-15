@@ -168,7 +168,7 @@ class Conveyor : public Machine{
     bool tachometer_state;
     bool tachometer_read;
     
-    static uint16_t tachometer_val;
+    volatile uint16_t tachometer_val;
     static void tachometer_ISR();
     static Conveyor* tachometer;
     
