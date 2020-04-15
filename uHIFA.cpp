@@ -276,21 +276,20 @@ void Shuttle::beginDeliv(uint8_t mode){
                     deliv_seq_index = 0x0;
                 }      
             }else if(mode == RETRACTED){
-                    if(not arm.get(RETRACTED) and deliv_seq_index==0){
-                        arm.retract();
-                        deliv_seq_index += 1;
-                    }else{
-                        deliv_seq_index += 1;
-                    }
-                    
-                    if(arm.get(SAFE) and wait(1000) and (deliv_seq_index==1)){
-                        arm.grab();
-                        deliv_seq_index += 1;
-                    }
-                    if(arm.get(HOLDING) and (deliv_seq_index==2)){
-                        delivering = true;
-                        deliv_seq_index = 0;
-                    }  
+                if(not arm.get(RETRACTED) and deliv_seq_index==0x0){
+                    arm.retract();
+                    deliv_seq_index = 0x1;
+                }else{
+                    deliv_seq_index = 0x1;
+                }
+                if(arm.get(SAFE) and wait(1000) and (deliv_seq_index==0x1)){
+                    arm.grab();
+                    deliv_seq_index = 0x2;
+                }
+                if(arm.get(HOLDING) and (deliv_seq_index==0x2)){
+                    delivering = true;
+                    deliv_seq_index = 0;
+                }  
             }
         }
     }
@@ -438,7 +437,7 @@ void Conveyor::update(){
 }
 
 void Conveyor::move(int16_t pos){
-    if(not in_safety_proc){
+    if(get(SAFE)){
         start();
     }
     if(pos != (MAX or MIN) and get(SAFE)){
@@ -475,9 +474,7 @@ void Conveyor::move(int16_t pos){
 
 
 int16_t Conveyor::get(int8_t mode){
-    if(mode == RESET_REQ){
-        return req_reset;
-    }else if(mode == RESETING){
+    if(mode == RESETING){
         return reseting;
     }else if(mode == MOVING){
         return moving;

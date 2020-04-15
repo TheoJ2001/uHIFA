@@ -20,12 +20,11 @@
 #define MOVING 0x5
 #define SEQUENCE_INDEX 0x6
 #define DELIVERING 0x7
-#define RESET_REQ 0x8
-#define RESETING 0x9
-#define DIRECTION 0xA
-#define DIRECTION_DEFAULT 0xB
-#define FORWARDS 0xC
-#define BACKWARDS 0xD
+#define RESETING 0x8
+#define DIRECTION 0x9
+#define DIRECTION_DEFAULT 0xA
+#define FORWARDS 0xB
+#define BACKWARDS 0xC
 
 static uint64_t tachometer_val;
 void tachometer_ISR();
@@ -156,9 +155,7 @@ class Conveyor : public Machine{
     bool at_min;
     bool at_max;
     
-    bool req_reset = true;
     bool reseting;
-    bool overshot = false;
     bool moving;
     bool unsafe = false;
     bool in_safety_proc = false;
@@ -166,11 +163,7 @@ class Conveyor : public Machine{
     int8_t direction = FORWARDS;
     
     uint8_t target_pos;
-
     uint16_t tachometer_max;
-    
-    bool tachometer_state;
-    bool tachometer_read;
     
     
     void start();
