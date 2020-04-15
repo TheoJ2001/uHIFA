@@ -1,5 +1,9 @@
 #include "uHIFA.h"
 
+void tachometer_ISR(){
+    tachometer_val++;
+}
+
 bool Piston::wait(uint64_t dur){
     wait_time = millis();
     if(not waiting){
@@ -341,7 +345,6 @@ Conveyor::Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t t
     min_sens_pin = min;
     max_sens_pin = max;
     tachometer_pin = tachom;
-    tachometer = this;
 }
 
 void Conveyor::init(){
@@ -351,10 +354,6 @@ void Conveyor::init(){
     pinMode(max_sens_pin, INPUT);
     pinMode(tachometer_pin, INPUT);
     attachInterrupt(digitalPinToInterrupt(tachometer_pin), tachometer_ISR, CHANGE);
-}
-
-void Conveyor::tachometer_ISR(){
-    tachometer_val++;
 }
 
 void Conveyor::setMax(uint16_t maxim){
@@ -388,7 +387,7 @@ void Conveyor::backward(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-    tachometer->tachometer_ISR();
+    tachometer_ISR();
 }
 
 void Conveyor::update(){

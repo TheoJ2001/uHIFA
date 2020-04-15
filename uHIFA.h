@@ -27,6 +27,9 @@
 #define FORWARDS 0xC
 #define BACKWARDS 0xD
 
+uint8_t tachometer_val;
+void tachometer_ISR();
+
 class Piston{
   public:
     Piston() = default;
@@ -168,9 +171,6 @@ class Conveyor : public Machine{
     bool tachometer_state;
     bool tachometer_read;
     
-    volatile uint16_t tachometer_val;
-    static void tachometer_ISR();
-    static Conveyor* tachometer;
     
     void start();
     void stop();
