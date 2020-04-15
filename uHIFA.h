@@ -28,7 +28,7 @@
 #define BACKWARDS 0xD
 
 static uint64_t tachometer_val;
-static void tachometer_ISR();
+void tachometer_ISR();
 
 class Piston{
   public:
