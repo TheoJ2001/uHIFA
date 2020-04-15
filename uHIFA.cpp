@@ -413,7 +413,7 @@ void Conveyor::update(){
     if((at_max and at_min) and in_safety_proc){
         if(default_direction and get(FORWARDS)){
             in_safety_proc = false;
-        }else if(!default_direction and get(FORWARDS)){
+        }else if(!default_direction and get(BACKWARDS)){
             in_safety_proc = false;
         }
     }
