@@ -168,8 +168,9 @@ class Conveyor : public Machine{
     bool tachometer_state;
     bool tachometer_read;
     
-    uint16_t tachometer_val;
-    void tachometer_ISR();
+    static uint16_t tachometer_val;
+    static void tachometer_ISR();
+    static Conveyor* tachometer;
     
     void start();
     void stop();

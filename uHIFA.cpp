@@ -341,6 +341,7 @@ Conveyor::Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t t
     min_sens_pin = min;
     max_sens_pin = max;
     tachometer_pin = tachom;
+    tachometer = this;
 }
 
 void Conveyor::init(){
@@ -349,7 +350,7 @@ void Conveyor::init(){
     pinMode(min_sens_pin, INPUT);
     pinMode(max_sens_pin, INPUT);
     pinMode(tachometer_pin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(tachometer_pin), this->tachometer_ISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(tachometer_pin), tachometer_ISR, CHANGE);
 }
 
 void Conveyor::tachometer_ISR(){
@@ -387,7 +388,7 @@ void Conveyor::backward(){
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
     at_max = digitalRead(max_sens_pin);
-    tachometer_ISR();
+    tachometer->tachometer_ISR();
 }
 
 void Conveyor::update(){
