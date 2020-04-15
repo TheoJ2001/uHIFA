@@ -408,12 +408,14 @@ void Conveyor::update(){
 
     if(in_safety_proc){
         forward();
-        start();
     }
 
-    if((not at_max and not at_min) and in_safety_proc){
-        in_safety_proc = false;
-        stop();
+    if((at_max and at_min) and in_safety_proc){
+        if(default_direction and get(FORWARDS)){
+            in_safety_proc = false;
+        }else if(!default_direction and get(FORWARDS)){
+            in_safety_proc = false;
+        }
     }
 
     if(in_safety_proc){
@@ -436,7 +438,9 @@ void Conveyor::update(){
 }
 
 void Conveyor::move(int16_t pos){
-    start();
+    if(not in_safety_proc){
+        start();
+    }
     if(pos != (MAX or MIN) and get(SAFE)){
         if(not default_direction){
             target_pos = tachometer_max - pos;
