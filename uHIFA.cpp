@@ -386,7 +386,7 @@ void Conveyor::backward(){
 
 void Conveyor::scan(){
     at_min = digitalRead(min_sens_pin);
-    at_max = digitalRead(max_sens_pin);
+    at_max = digitalRead(max_sens_pin); 
 }
 
 void Conveyor::update(){

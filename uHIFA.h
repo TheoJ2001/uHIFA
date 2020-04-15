@@ -143,6 +143,7 @@ class Conveyor : public Machine{
     void scan();
     void update();
     void move(int16_t pos);
+    void stop();
 
     int16_t get(int8_t mode);
   private:
@@ -173,7 +174,6 @@ class Conveyor : public Machine{
     
     
     void start();
-    void stop();
     void forward();
     void backward();
 };
