@@ -406,7 +406,7 @@ void Conveyor::update(){
         tachometer_val = 0;
     }
 
-    if(wait(200) and in_safety_proc){
+    if(in_safety_proc){
         forward();
         start();
     }
@@ -454,11 +454,17 @@ void Conveyor::move(int16_t pos){
         }else{
             forward();
         }
+        if(at_min){
+            stop();
+        }
     }else if(pos==MAX and get(SAFE)){
         if(default_direction){
             forward();
         }else{
             backward();
+        }
+        if(at_max){
+            stop();
         }
     }
 }
