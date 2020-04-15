@@ -27,7 +27,7 @@
 #define FORWARDS 0xC
 #define BACKWARDS 0xD
 
-uint8_t tachometer_val;
+volatile uint8_t tachometer_val;
 void tachometer_ISR();
 
 class Piston{
