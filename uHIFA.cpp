@@ -353,7 +353,7 @@ void Conveyor::init(){
     pinMode(min_sens_pin, INPUT);
     pinMode(max_sens_pin, INPUT);
     pinMode(tachometer_pin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(tachometer_pin), tachometer_ISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(tachometer_pin), tachometer_ISR, RISING);
 }
 
 void Conveyor::setMax(uint16_t maxim){
