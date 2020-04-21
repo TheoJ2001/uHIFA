@@ -26,7 +26,7 @@
 #define FORWARDS 0xB
 #define BACKWARDS 0xC
 
-static uint64_t tachometer_val;
+static volatile int16_t tachometer_val;
 void tachometer_ISR();
 
 class Piston{
@@ -162,8 +162,8 @@ class Conveyor : public Machine{
     bool default_direction = true;
     int8_t direction = FORWARDS;
     
-    uint8_t target_pos;
-    uint16_t tachometer_max;
+    int16_t target_pos;
+    int16_t tachometer_max;
     
     
     void start();
