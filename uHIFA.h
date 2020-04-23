@@ -26,22 +26,20 @@
 #define FORWARDS 0xB
 #define BACKWARDS 0xC
 
-static volatile int16_t tachometer_val;
-void tachometer_ISR();
 
 class Piston{
   public:
-    Piston() = default;
+    Piston(void) = default;
     bool wait(uint64_t dur);
     void config(uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin);
-    virtual void init();
-    void scan();
-    virtual void update();
+    virtual void init(void);
+    void scan(void);
+    virtual void update(void);
     virtual int16_t get(int8_t mode);
     
-    void push();
-    void extend();
-    void retract();
+    void push(void);
+    void extend(void);
+    void retract(void);
 
     virtual ~Piston() = default;
   protected:  
@@ -61,17 +59,17 @@ class Piston{
 
 class Grabber : public Piston{
   public:
-    Grabber() = default;
+    Grabber(void) = default;
     void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t push_pin, uint8_t hold_pin, uint8_t grab_pin);
-    void init();
-    void scan();
-    void update();
+    void init(void);
+    void scan(void);
+    void update(void);
     int16_t get(int8_t mode);
 
-    void grab();
-    void drop();
+    void grab(void);
+    void drop(void);
   protected:
-    void read();
+    void read(void);
   private:
     uint8_t grabType; 
     uint8_t hold_sens; 
@@ -99,9 +97,9 @@ class Grabber : public Piston{
 class Shuttle : public Machine{
   public:
 	  Shuttle(uint8_t upper, uint8_t lower); 
-    void init();
-    void scan();
-    void update();
+    void init(void);
+    void scan(void);
+    void update(void);
     int16_t get(int8_t mode);;
 
 	  void config(uint8_t type, uint8_t rtd_pin, uint8_t ext_pin, uint8_t arm_pin, uint8_t hold_pin, uint8_t grab_pin); 
@@ -111,7 +109,7 @@ class Shuttle : public Machine{
     void beginDeliv(uint8_t mode);
     void endDeliv(uint8_t mode);
   protected:
-    void read();
+    void read(void);
   private:
     Grabber arm;
     uint8_t max_stops = 8;
@@ -129,20 +127,23 @@ class Shuttle : public Machine{
     bool delivering = false; 
     bool moving = false;
     
-    void stop();
-    void forward();
-    void backward();
+    void stop(void);
+    void forward(void);
+    void backward(void);
 };
+
+void tachometer_ISR(void);
+static volatile int16_t tachometer_val;
 
 class Conveyor : public Machine{
   public:
     Conveyor(uint8_t pwr, uint8_t plr, uint8_t min, uint8_t max, uint8_t tachom);
-    void init();
+    void init(void);
     void setMax(uint16_t maxim);
-    void scan();
-    void update();
+    void scan(void);
+    void update(void);
     void move(int16_t pos);
-    void stop();
+    void stop(void);
 
     int16_t get(int8_t mode);
   private:
@@ -166,9 +167,9 @@ class Conveyor : public Machine{
     int16_t tachometer_max;
     
     
-    void start();
-    void forward();
-    void backward();
+    void start(void);
+    void forward(void);
+    void backward(void);
 };
 #endif
 
