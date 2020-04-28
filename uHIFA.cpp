@@ -61,7 +61,7 @@ void Piston::push(){
     }
 }
 
-int16_t Piston::get(int8_t mode){
+bool Piston::get(int8_t mode){
     if(mode == RETRACTED){
         return retracted;
     }else if(mode == EXTENDED){
@@ -125,7 +125,7 @@ void Grabber::drop(){
      grabber_pressure = LOW;
 }
 
-int16_t Grabber::get(int8_t mode){
+bool Grabber::get(int8_t mode){
     read();
     if(mode == RETRACTED){
         return retracted;
@@ -157,17 +157,13 @@ bool Machine::wait(uint64_t dur){
     }
 }
 
-int16_t Machine::status(int8_t mode){
-   return get(mode);
-}
-
 Shuttle::Shuttle(uint8_t upper, uint8_t lower){
 	upper_pin = upper;	
 	lower_pin = lower;
 }
 
 void Shuttle::init(){
-    for(uint8_t i = 0; i<max_stops; i++){ //sets all pins for the stops to undefined
+    for(uint8_t i = 0; i<8; i++){ //sets all pins for the stops to undefined
     	stops[i] = UNDEFINED;
     }
     pinMode(upper_pin, OUTPUT);
@@ -205,15 +201,15 @@ void Shuttle::addStop(uint8_t s_index, int8_t s_pin){
 
 void Shuttle::read(){
 	for(uint8_t i = 0; i<stops_amt; i++){
-		stop_get[i] = digitalRead(stops[i]);
-		if(stop_get[i] != 0){
+		stop_state[i] = digitalRead(stops[i]);
+		if(stop_state[i] != 0){
             last_stop = i;
         }
 	}
     current_stop = UNDEFINED;
     for(uint8_t i = 0; i<stops_amt; i++){
-		stop_get[i] = digitalRead(stops[i]);
-		if(stop_get[i] != 0){
+		stop_state[i] = digitalRead(stops[i]);
+		if(stop_state[i] != 0){
             current_stop = last_stop;
         }
 	}
@@ -323,11 +319,7 @@ int16_t Shuttle::get(int8_t mode){
     if(mode == POSITION){
         return last_stop;
     }else if(mode == MOVING){
-        if(current_stop == -1){
-            return true;
-        }else{
-            return false;
-        }
+        return moving;
     }else if(mode == DELIVERING){
         return delivering;
     }else if(mode == SAFE){
@@ -393,7 +385,6 @@ void Conveyor::update(){
         stop(); 
         in_safety_proc = true;
         default_direction = true;
-        reseting = false;
         tachometer_val = 0;
     }
 
@@ -401,7 +392,6 @@ void Conveyor::update(){
         stop();
         in_safety_proc = true;
         default_direction = false;
-        reseting = false;
         tachometer_val = 0;
     }
 
@@ -472,11 +462,8 @@ void Conveyor::move(int16_t pos){
     }
 }
 
-
 int16_t Conveyor::get(int8_t mode){
-    if(mode == RESETING){
-        return reseting;
-    }else if(mode == MOVING){
+    if(mode == MOVING){
         return moving;
     }else if(mode == MIN){
         return at_min;
