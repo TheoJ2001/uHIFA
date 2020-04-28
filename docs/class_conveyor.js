@@ -1,0 +1,28 @@
+var class_conveyor =
+[
+    [ "Conveyor", "class_conveyor.html#a1dd3ca468e5131ad9e8b14ce91b53bf8", null ],
+    [ "backward", "class_conveyor.html#a7a5faf10355305c8509a8f3056fe4bf7", null ],
+    [ "forward", "class_conveyor.html#a3d8e0a866ed9c6695a8f36644064922e", null ],
+    [ "get", "class_conveyor.html#a673d9b2a231425b3f3c0bd65146c3f52", null ],
+    [ "init", "class_conveyor.html#ac193df62202ff39e8ba8a93144b2d536", null ],
+    [ "move", "class_conveyor.html#a408bbf90f1c5a70ea19b0f9652f12321", null ],
+    [ "scan", "class_conveyor.html#a36422d0debbd8b4da0bf6eb6846394e8", null ],
+    [ "setMax", "class_conveyor.html#a5fe08de44fd1cec4634eddadcfc932cb", null ],
+    [ "start", "class_conveyor.html#a3cdf6d7979c9097d717f0125f824195e", null ],
+    [ "stop", "class_conveyor.html#a885ac64004fb82336aab7c688c060f3a", null ],
+    [ "update", "class_conveyor.html#ac5ea3f59a41eb9e36f87f55c7c399e1c", null ],
+    [ "at_max", "class_conveyor.html#ae741d1d39ec4fcda54e3a5bfb5147adc", null ],
+    [ "at_min", "class_conveyor.html#ad2066e7759a3f2103d324eff8a04ff7a", null ],
+    [ "default_direction", "class_conveyor.html#a1a1e9f2ce770002f8f7a72ff914b3dff", null ],
+    [ "direction", "class_conveyor.html#aec27a9bed973c56d21fa3e4a1fd62bdc", null ],
+    [ "in_safety_proc", "class_conveyor.html#a16d91ce0d0ce3da42f2fa89e76dfa50d", null ],
+    [ "max_sens_pin", "class_conveyor.html#ab711f5f1463ec813bfa88f1d0765fa5a", null ],
+    [ "min_sens_pin", "class_conveyor.html#afaf5394a901f1bb98c9836234f67af17", null ],
+    [ "moving", "class_conveyor.html#ab61bfc328f8cf210c48bd1b917f2203e", null ],
+    [ "polar_relay_pin", "class_conveyor.html#a1dbfd71aafbc274ebb6c2d6ec730f4a6", null ],
+    [ "power_relay_pin", "class_conveyor.html#aa499fe328facff74696fbebc75bc96b6", null ],
+    [ "tachometer_max", "class_conveyor.html#a564764b0e2ccc45c1786fdfd092a2be6", null ],
+    [ "tachometer_pin", "class_conveyor.html#a91e63d7e6c080f8cfaa9f504fe4ac501", null ],
+    [ "target_pos", "class_conveyor.html#a8a57813623bef01835c272b05b427c72", null ],
+    [ "unsafe", "class_conveyor.html#ab08b36cd77ea11206c879723a5bdb598", null ]
+];
