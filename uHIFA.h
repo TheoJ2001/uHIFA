@@ -178,7 +178,7 @@ class Piston{
 };
 
 /**
- * @brief Similar to Piston, has the ability to grab but cannot push
+ * @brief Similar to Piston, has the ability to grab
  */ 
 class Grabber : public Piston{
   public:
